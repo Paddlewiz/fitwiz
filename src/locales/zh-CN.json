@@ -100,6 +100,10 @@
     "result": "计算结果",
     "yourBMI": "您的BMI",
     "bmiScale": "BMI等级量表",
+    "underweight": "偏瘦",
+    "normal": "正常",
+    "overweight": "超重",
+    "obese": "肥胖",
     "categories": {
       "underweight": "偏瘦",
       "underweightRange": "< 18.5",
@@ -214,6 +218,7 @@
     "title": "仪表盘",
     "description": "查看您的健康数据概览、趋势图表和目标进度",
     "subtitle": "您的健康数据概览",
+    "welcome": "欢迎回来",
     "latestData": "最新数据",
     "weight": "体重",
     "bmi": "BMI",
@@ -225,6 +230,7 @@
     "last30Days": "近30天",
     "targetProgress": "目标进度",
     "currentWeight": "当前体重",
+    "currentBMI": "当前BMI",
     "targetWeight": "目标体重",
     "progress": "进度",
     "remaining": "还需",
@@ -234,6 +240,10 @@
     "noTargetDesc": "设定目标体重以追踪进度",
     "quickActions": "快捷操作",
     "addMetrics": "添加数据",
+    "logWeight": "记录体重",
+    "tdeeCalc": "TDEE计算",
+    "bmiCalc": "BMI计算",
+    "fullMetrics": "完整数据",
     "viewTdee": "计算TDEE",
     "viewBmi": "计算BMI",
     "viewHistory": "查看历史",
@@ -245,7 +255,17 @@
     "calories": "卡路里",
     "days": "天",
     "lost": "已减",
-    "gained": "已增"
+    "gained": "已增",
+    "startTracking": "开始追踪",
+    "noWeightData": "暂无体重数据",
+    "downFromLast": "较上次下降",
+    "upFromLast": "较上次上升",
+    "progressToTarget": "目标进度",
+    "current": "当前",
+    "target": "目标",
+    "complete": "完成",
+    "goalAchieved": "目标已达成！",
+    "recordNow": "立即记录"
   },
   "footer": {
     "brand": "FitWiz",
@@ -285,7 +305,10 @@
     "years": "岁",
     "days": "天",
     "today": "今天",
-    "yesterday": "昨天"
+    "yesterday": "昨天",
+    "logout": "退出登录",
+    "user": "用户",
+    "noData": "暂无数据"
   },
   "lang": {
     "zh": "中文",

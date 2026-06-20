@@ -11,6 +11,7 @@ type Translation = Record<string, any>;
 // Context type
 interface I18nContextType {
   language: Language;
+  locale: Language; // alias for language, used by components
   t: (key: string) => string;
   setLanguage: (lang: Language) => void;
   toggleLanguage: () => void;
@@ -96,7 +97,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <I18nContext.Provider value={{ language, t, setLanguage, toggleLanguage }}>
+    <I18nContext.Provider value={{ language, locale: language, t, setLanguage, toggleLanguage }}>
       {children}
     </I18nContext.Provider>
   );

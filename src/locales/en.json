@@ -100,6 +100,10 @@
     "result": "Result",
     "yourBMI": "Your BMI",
     "bmiScale": "BMI Scale",
+    "underweight": "Underweight",
+    "normal": "Normal",
+    "overweight": "Overweight",
+    "obese": "Obese",
     "categories": {
       "underweight": "Underweight",
       "underweightRange": "< 18.5",
@@ -214,6 +218,7 @@
     "title": "Dashboard",
     "description": "View your health data overview, trend charts and goal progress",
     "subtitle": "Your Health Overview",
+    "welcome": "Welcome back",
     "latestData": "Latest Data",
     "weight": "Weight",
     "bmi": "BMI",
@@ -225,6 +230,7 @@
     "last30Days": "Last 30 Days",
     "targetProgress": "Target Progress",
     "currentWeight": "Current Weight",
+    "currentBMI": "Current BMI",
     "targetWeight": "Target Weight",
     "progress": "Progress",
     "remaining": "Remaining",
@@ -234,6 +240,10 @@
     "noTargetDesc": "Set a target weight to track progress",
     "quickActions": "Quick Actions",
     "addMetrics": "Add Metrics",
+    "logWeight": "Log Weight",
+    "tdeeCalc": "TDEE Calc",
+    "bmiCalc": "BMI Calc",
+    "fullMetrics": "Full Metrics",
     "viewTdee": "Calculate TDEE",
     "viewBmi": "Calculate BMI",
     "viewHistory": "View History",
@@ -245,7 +255,17 @@
     "calories": "calories",
     "days": "days",
     "lost": "Lost",
-    "gained": "Gained"
+    "gained": "Gained",
+    "startTracking": "Start Tracking",
+    "noWeightData": "No weight data yet",
+    "downFromLast": "Down from last",
+    "upFromLast": "Up from last",
+    "progressToTarget": "Progress to Target",
+    "current": "Current",
+    "target": "Target",
+    "complete": "complete",
+    "goalAchieved": "Goal achieved!",
+    "recordNow": "Record Now"
   },
   "footer": {
     "brand": "FitWiz",
@@ -285,7 +305,10 @@
     "years": "years",
     "days": "days",
     "today": "Today",
-    "yesterday": "Yesterday"
+    "yesterday": "Yesterday",
+    "logout": "Logout",
+    "user": "User",
+    "noData": "No Data"
   },
   "lang": {
     "zh": "中文",
