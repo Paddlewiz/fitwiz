@@ -11,12 +11,12 @@ interface HealthScoreRingProps {
   className?: string;
 }
 
-// 根据分数获取颜色
+// 根据分数获取颜色 - 统一使用翠绿色主题
 function getScoreColor(score: number): string {
-  if (score >= 85) return '#10B981'; // 绿色 - 优秀
-  if (score >= 70) return '#3B82F6'; // 蓝色 - 良好
-  if (score >= 50) return '#F59E0B'; // 橙色 - 一般
-  return '#EF4444'; // 红色 - 需改进
+  if (score >= 85) return '#10B981'; // 翠绿色 - 优秀/达标
+  if (score >= 70) return '#34D399'; // 浅翠绿 - 良好
+  if (score >= 50) return '#F59E0B'; // 橙色 - 一般/未达标
+  return '#FB923C'; // 浅橙色 - 需改进
 }
 
 // 根据分数获取等级
@@ -73,15 +73,15 @@ export function HealthScoreRing({
   const scoreColor = getScoreColor(animatedScore);
   const scoreLevel = getScoreLevel(animatedScore);
 
-  // SVG 环形参数
-  const size = 200;
+  // SVG 环形参数 - 放大尺寸作为核心视觉焦点
+  const size = 280;
   const center = size / 2;
-  const strokeWidth = 12;
+  const strokeWidth = 16;
 
-  // 外层三个分段环的半径
-  const outerRadius = 85;
-  // 内层综合评分环的半径
-  const innerRadius = 65;
+  // 外层三个分段环的半径 - 增大
+  const outerRadius = 120;
+  // 内层综合评分环的半径 - 增大
+  const innerRadius = 90;
 
   // 计算弧度路径
   const createArcPath = (
@@ -130,17 +130,17 @@ export function HealthScoreRing({
   // 内层综合评分环
   const scoreArcEnd = Math.min(360 * (animatedScore / 100), 360);
 
-  // 进度颜色
+  // 进度颜色 - 统一配色：达标翠绿色，未达标橙色
   const getProgressColor = (progress: number): string => {
-    if (progress >= 100) return '#10B981'; // 达标 - 绿色
+    if (progress >= 100) return '#10B981'; // 达标 - 翠绿色
     if (progress >= 70) return '#F59E0B'; // 接近达标 - 橙色
-    return '#9CA3AF'; // 未达标 - 灰色
+    return '#D1D5DB'; // 未达标 - 浅灰色
   };
 
   return (
     <div className={cn('relative flex flex-col items-center', className)}>
       {/* SVG 环形仪表盘 */}
-      <svg width={size} height={size} className="relative">
+      <svg width={size} height={size} className={cn('relative', isHotState && 'animate-pulse')}>
         {/* 背景圆环 - 外层 */}
         <circle
           cx={center}
@@ -158,87 +158,100 @@ export function HealthScoreRing({
           r={innerRadius}
           fill="none"
           stroke="#E5E7EB"
-          strokeWidth={strokeWidth}
+          strokeWidth={strokeWidth - 4}
         />
 
-        {/* 外层三个分段进度 */}
-        {/* 蛋白质进度 (0-120度) */}
-        <path
-          d={createArcPath(outerRadius, proteinArc.start, proteinArc.end)}
-          fill="none"
-          stroke={getProgressColor(animatedProtein)}
-          strokeWidth={strokeWidth}
-          strokeLinecap="round"
-          className={cn(
-            'transition-all duration-300',
-            isHotState && animatedProtein >= 100 && 'animate-pulse'
-          )}
-        />
+        {/* 外层三段进度环 - 蛋白质（0-120度） */}
+        {animatedProtein > 0 && (
+          <path
+            d={createArcPath(outerRadius, proteinArc.start, proteinArc.end)}
+            fill="none"
+            stroke={getProgressColor(animatedProtein)}
+            strokeWidth={strokeWidth}
+            strokeLinecap="round"
+          />
+        )}
 
-        {/* 能量缺口进度 (120-240度) */}
-        <path
-          d={createArcPath(outerRadius, energyArc.start, energyArc.end)}
-          fill="none"
-          stroke={getProgressColor(animatedEnergy)}
-          strokeWidth={strokeWidth}
-          strokeLinecap="round"
-          className={cn(
-            'transition-all duration-300',
-            isHotState && animatedEnergy >= 100 && 'animate-pulse'
-          )}
-        />
+        {/* 外层三段进度环 - 能量缺口（120-240度） */}
+        {animatedEnergy > 0 && (
+          <path
+            d={createArcPath(outerRadius, energyArc.start, energyArc.end)}
+            fill="none"
+            stroke={getProgressColor(animatedEnergy)}
+            strokeWidth={strokeWidth}
+            strokeLinecap="round"
+          />
+        )}
 
-        {/* 运动消耗进度 (240-360度) */}
-        <path
-          d={createArcPath(outerRadius, exerciseArc.start, exerciseArc.end)}
-          fill="none"
-          stroke={getProgressColor(animatedExercise)}
-          strokeWidth={strokeWidth}
-          strokeLinecap="round"
-          className={cn(
-            'transition-all duration-300',
-            isHotState && animatedExercise >= 100 && 'animate-pulse'
-          )}
-        />
+        {/* 外层三段进度环 - 运动消耗（240-360度） */}
+        {animatedExercise > 0 && (
+          <path
+            d={createArcPath(outerRadius, exerciseArc.start, exerciseArc.end)}
+            fill="none"
+            stroke={getProgressColor(animatedExercise)}
+            strokeWidth={strokeWidth}
+            strokeLinecap="round"
+          />
+        )}
 
-        {/* 内层综合评分进度 */}
-        <path
-          d={createArcPath(innerRadius, 0, scoreArcEnd)}
-          fill="none"
-          stroke={scoreColor}
-          strokeWidth={strokeWidth}
-          strokeLinecap="round"
-          className="transition-all duration-500"
-        />
-      </svg>
+        {/* 内层综合评分环 */}
+        {animatedScore > 0 && (
+          <circle
+            cx={center}
+            cy={center}
+            r={innerRadius}
+            fill="none"
+            stroke={scoreColor}
+            strokeWidth={strokeWidth - 4}
+            strokeDasharray={`${(scoreArcEnd / 360) * 2 * Math.PI * innerRadius} ${2 * Math.PI * innerRadius}`}
+            strokeLinecap="round"
+            transform={`rotate(-90 ${center} ${center})`}
+          />
+        )}
 
-      {/* 中心分数显示 */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span
-          className={cn(
-            'text-4xl font-bold transition-colors duration-500',
-            isHotState && 'animate-pulse'
-          )}
-          style={{ color: scoreColor }}
+        {/* 中心分数和等级 */}
+        <text
+          x={center}
+          y={center - 10}
+          textAnchor="middle"
+          className="fill-current text-gray-900 font-bold"
+          style={{ fontSize: '48px' }}
         >
           {animatedScore}
-        </span>
-        <span className="text-sm text-gray-500 mt-1">{scoreLevel}</span>
+        </text>
+        <text
+          x={center}
+          y={center + 25}
+          textAnchor="middle"
+          className="fill-current text-gray-600"
+          style={{ fontSize: '18px' }}
+        >
+          {scoreLevel}
+        </text>
+      </svg>
 
-        {/* 火热状态标签 */}
-        {isHotState && (
-          <div className="mt-2 px-3 py-1 bg-gradient-to-r from-green-400 to-teal-500 rounded-full text-white text-xs font-medium animate-bounce shadow-lg">
-            🔥 火热状态
-          </div>
-        )}
-      </div>
+      {/* 火热状态标签 */}
+      {isHotState && (
+        <div className="absolute -top-2 left-1/2 -translate-x-1/2 bg-gradient-to-r from-teal-500 to-emerald-500 text-white text-xs font-bold px-3 py-1 rounded-full animate-bounce shadow-lg">
+          🔥 火热状态
+        </div>
+      )}
 
-      {/* 外层标签 */}
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-2 text-xs text-gray-600">
-        🥩 蛋白质
+      {/* 图例说明 */}
+      <div className="flex justify-center gap-4 mt-4 text-sm">
+        <div className="flex items-center gap-1">
+          <div className="w-3 h-3 rounded-full bg-teal-500" />
+          <span className="text-gray-600">蛋白质</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-3 h-3 rounded-full bg-emerald-500" />
+          <span className="text-gray-600">能量缺口</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-3 h-3 rounded-full bg-green-500" />
+          <span className="text-gray-600">运动消耗</span>
+        </div>
       </div>
-      <div className="absolute bottom-4 left-2 text-xs text-gray-600">🔥 能量</div>
-      <div className="absolute bottom-4 right-2 text-xs text-gray-600">🏃 运动</div>
     </div>
   );
 }

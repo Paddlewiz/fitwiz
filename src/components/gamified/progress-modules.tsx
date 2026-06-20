@@ -47,46 +47,48 @@ export function ProgressModule({
     }
   }, [achieved, progress]);
 
+  // 统一配色：达标翠绿色，未达标橙色
+  const achievedColor = 'bg-teal-500 text-teal-500';
+  const notAchievedColor = 'bg-orange-500 text-orange-500';
+
   return (
     <div
       className={cn(
-        'relative bg-white rounded-xl p-4 shadow-sm border overflow-hidden transition-all duration-300',
-        achieved ? 'border-green-200' : 'border-orange-200',
-        showAchievedAnimation && 'animate-pulse border-green-400',
+        'relative bg-white rounded-lg p-3 shadow-sm border overflow-hidden transition-all duration-300',
+        achieved ? 'border-teal-200' : 'border-orange-200',
+        showAchievedAnimation && 'animate-pulse border-teal-400',
         className
       )}
     >
       {/* 左侧彩色高亮条（FIFA风格） */}
       <div
         className={cn(
-          'absolute left-0 top-0 bottom-0 w-1.5 transition-colors duration-300',
-          achieved ? 'bg-gradient-to-b from-green-400 to-teal-500' : 'bg-gradient-to-b from-orange-400 to-yellow-500'
+          'absolute left-0 top-0 bottom-0 w-1 transition-colors duration-300',
+          achieved ? 'bg-gradient-to-b from-teal-400 to-teal-600' : 'bg-gradient-to-b from-orange-400 to-orange-600'
         )}
       />
 
       <div className="flex items-center justify-between">
         {/* 左侧：图标 + 名称 */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <div
             className={cn(
-              'w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-300',
-              achieved
-                ? 'bg-green-100 text-green-600'
-                : 'bg-orange-100 text-orange-500',
+              'w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300',
+              achieved ? 'bg-teal-100 text-teal-600' : 'bg-orange-100 text-orange-500',
               showAchievedAnimation && 'scale-110 animate-bounce'
             )}
           >
             {icon}
           </div>
           <div>
-            <span className="font-medium text-gray-900">{label}</span>
+            <span className="font-medium text-gray-900 text-sm">{label}</span>
             {!achieved && remaining > 0 && (
-              <span className="text-xs text-orange-500 ml-2">
+              <span className="text-xs text-orange-500 ml-1">
                 还差 {remaining.toFixed(0)}{unit}
               </span>
             )}
             {achieved && (
-              <span className="text-xs text-green-500 ml-2">✓ 已达标</span>
+              <span className="text-xs text-teal-500 ml-1">✓</span>
             )}
           </div>
         </div>
@@ -95,24 +97,22 @@ export function ProgressModule({
         <div className="text-right">
           <span
             className={cn(
-              'font-bold text-lg',
-              achieved ? 'text-green-600' : 'text-orange-500'
+              'font-bold text-base',
+              achieved ? 'text-teal-600' : 'text-orange-500'
             )}
           >
             {current.toFixed(0)}
           </span>
-          <span className="text-gray-400 text-sm"> / {target.toFixed(0)} {unit}</span>
+          <span className="text-gray-400 text-xs"> / {target.toFixed(0)} {unit}</span>
         </div>
       </div>
 
       {/* 进度条 */}
-      <div className="mt-3 h-2 bg-gray-100 rounded-full overflow-hidden">
+      <div className="mt-2 h-1.5 bg-gray-100 rounded-full overflow-hidden">
         <div
           className={cn(
             'h-full rounded-full transition-all duration-1000 ease-out',
-            achieved
-              ? 'bg-gradient-to-r from-green-400 to-teal-500'
-              : 'bg-gradient-to-r from-orange-400 to-yellow-500'
+            achieved ? 'bg-gradient-to-r from-teal-400 to-teal-600' : 'bg-gradient-to-r from-orange-400 to-orange-600'
           )}
           style={{ width: `${animatedWidth}%` }}
         />
@@ -120,7 +120,7 @@ export function ProgressModule({
 
       {/* 提示信息 */}
       {hint && !achieved && (
-        <div className="mt-2 text-xs text-gray-500 bg-gray-50 rounded px-2 py-1">
+        <div className="mt-1.5 text-xs text-gray-500 bg-gray-50 rounded px-2 py-0.5">
           💡 {hint}
         </div>
       )}
@@ -128,7 +128,7 @@ export function ProgressModule({
   );
 }
 
-// 三个进度模块的组合组件
+// 三个进度模块的组合组件 - 紧凑布局
 interface ProgressModulesGroupProps {
   proteinCurrent: number;
   proteinTarget: number;
@@ -177,29 +177,21 @@ export function ProgressModulesGroup({
     const remaining = exerciseTarget - exerciseCurrent;
     if (remaining <= 100) return '步行10分钟即可达标';
     if (remaining <= 200) return '快走或慢跑15分钟';
-    return '尝试散步、跑步或健身';
+    return '增加运动时间和强度';
   };
 
   return (
-    <div className={cn('space-y-3', className)}>
-      {/* 三项达标激励 */}
+    <div className={cn('space-y-2', className)}>
+      {/* 状态提示 */}
       {allAchieved && (
-        <div className="bg-gradient-to-r from-green-50 to-teal-50 border border-green-200 rounded-xl p-4 mb-4 animate-pulse">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">🎉</span>
-            <span className="font-medium text-green-700">
-              三项达标，明天大概率体重下降！
-            </span>
-          </div>
-          <div className="text-sm text-green-600 mt-1">
-            保持这个状态，你离目标越来越近了
-          </div>
+        <div className="bg-gradient-to-r from-teal-500 to-emerald-500 text-white text-sm font-medium px-4 py-2 rounded-lg text-center animate-pulse">
+          🎉 三项达标，明天大概率体重下降！
         </div>
       )}
 
-      {/* 蛋白质摄入 */}
+      {/* 进度模块 */}
       <ProgressModule
-        icon={<Beef className="w-5 h-5" />}
+        icon={<Beef className="w-4 h-4" />}
         label="蛋白质摄入"
         current={proteinCurrent}
         target={proteinTarget}
@@ -208,9 +200,8 @@ export function ProgressModulesGroup({
         hint={getProteinHint()}
       />
 
-      {/* 能量缺口 */}
       <ProgressModule
-        icon={<Flame className="w-5 h-5" />}
+        icon={<Flame className="w-4 h-4" />}
         label="能量缺口"
         current={energyDeficitCurrent}
         target={energyDeficitTarget}
@@ -219,9 +210,8 @@ export function ProgressModulesGroup({
         hint={getEnergyHint()}
       />
 
-      {/* 运动消耗 */}
       <ProgressModule
-        icon={<Activity className="w-5 h-5" />}
+        icon={<Activity className="w-4 h-4" />}
         label="运动消耗"
         current={exerciseCurrent}
         target={exerciseTarget}
