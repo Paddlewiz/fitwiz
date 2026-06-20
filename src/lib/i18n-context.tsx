@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useCallback, ReactNode } from 'react';
 
 // Language type
 type Language = 'zh-CN' | 'en';
@@ -8,20 +8,15 @@ type Language = 'zh-CN' | 'en';
 // Translation type (nested object)
 type Translation = Record<string, any>;
 
-// Context type
+// Context type - simplified for single language mode
 interface I18nContextType {
   language: Language;
   locale: Language; // alias for language, used by components
   t: (key: string) => string;
-  setLanguage: (lang: Language) => void;
-  toggleLanguage: () => void;
 }
 
 // Create context
 const I18nContext = createContext<I18nContextType | undefined>(undefined);
-
-// Storage key for language preference
-const LANGUAGE_STORAGE_KEY = 'fitwiz-language';
 
 // Import translations
 import zhCN from '@/locales/zh-CN.json';
@@ -32,73 +27,28 @@ const translations: Record<Language, Translation> = {
   'en': en,
 };
 
-// Detect default language based on timezone
-function detectDefaultLanguage(): Language {
-  try {
-    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    // Asia/Shanghai timezone → Chinese, others → English
-    if (timezone === 'Asia/Shanghai' || timezone.startsWith('Asia/China') || timezone === 'Asia/Chongqing' || timezone === 'Asia/Hong_Kong' || timezone === 'Asia/Macau') {
-      return 'zh-CN';
-    }
-    // Check if timezone suggests Chinese-speaking region
-    const chineseTimezones = [
-      'Asia/Shanghai',
-      'Asia/Beijing',
-      'Asia/Chongqing',
-      'Asia/Harbin',
-      'Asia/Kashgar',
-      'Asia/Urumqi',
-      'Asia/Hong_Kong',
-      'Asia/Macau',
-      'Asia/Taipei', // Taiwan
-    ];
-    if (chineseTimezones.includes(timezone)) {
-      return 'zh-CN';
-    }
-    return 'en';
-  } catch {
-    // Fallback to Chinese if timezone detection fails
-    return 'zh-CN';
-  }
+// Get language from environment variable, default to zh-CN
+function getSiteLanguage(): Language {
+  const siteLang = process.env.NEXT_PUBLIC_SITE_LANG || 'zh';
+  return siteLang === 'en' ? 'en' : 'zh-CN';
 }
 
-// Provider component
+// Fixed language for the site
+const SITE_LANGUAGE = getSiteLanguage();
+
+// Provider component - simplified for single language mode
 export function I18nProvider({ children }: { children: ReactNode }) {
-  const [language, setLanguageState] = useState<Language>('zh-CN'); // Initial state, will be updated on mount
-  const [mounted, setMounted] = useState(false);
-
-  // Load language from localStorage or detect from timezone on mount
-  useEffect(() => {
-    const savedLanguage = localStorage.getItem(LANGUAGE_STORAGE_KEY);
-    if (savedLanguage && (savedLanguage === 'zh-CN' || savedLanguage === 'en')) {
-      // User has manually set language preference, use it
-      setLanguageState(savedLanguage as Language);
-    } else {
-      // First visit: detect language from timezone
-      const detectedLanguage = detectDefaultLanguage();
-      setLanguageState(detectedLanguage);
-    }
-    setMounted(true);
-  }, []);
-
-  // Save language to localStorage when changed (only after user manually changes)
-  useEffect(() => {
-    if (mounted) {
-      localStorage.setItem(LANGUAGE_STORAGE_KEY, language);
-    }
-  }, [language, mounted]);
-
-  // Translation function
+  // Translation function - uses fixed language from environment variable
   const t = useCallback((key: string): string => {
     const keys = key.split('.');
-    let value: any = translations[language];
+    let value: any = translations[SITE_LANGUAGE];
     
     for (const k of keys) {
       if (value && typeof value === 'object' && k in value) {
         value = value[k];
       } else {
-        // Fallback to English if key not found in current language
-        let fallback: any = translations['en'];
+        // Fallback to zh-CN if key not found in current language
+        let fallback: any = translations['zh-CN'];
         for (const fk of keys) {
           if (fallback && typeof fallback === 'object' && fk in fallback) {
             fallback = fallback[fk];
@@ -111,25 +61,10 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     }
     
     return typeof value === 'string' ? value : key;
-  }, [language]);
-
-  // Set language
-  const setLanguage = useCallback((lang: Language) => {
-    setLanguageState(lang);
   }, []);
-
-  // Toggle language between zh-CN and en
-  const toggleLanguage = useCallback(() => {
-    setLanguageState(prev => prev === 'zh-CN' ? 'en' : 'zh-CN');
-  }, []);
-
-  // Prevent hydration mismatch by not rendering until mounted
-  if (!mounted) {
-    return null;
-  }
 
   return (
-    <I18nContext.Provider value={{ language, locale: language, t, setLanguage, toggleLanguage }}>
+    <I18nContext.Provider value={{ language: SITE_LANGUAGE, locale: SITE_LANGUAGE, t }}>
       {children}
     </I18nContext.Provider>
   );
@@ -150,11 +85,5 @@ export function useTranslation() {
   if (context === undefined) {
     throw new Error('useTranslation must be used within an I18nProvider');
   }
-  return {
-    t: context.t,
-    locale: context.language,
-    language: context.language,
-    setLanguage: context.setLanguage,
-    toggleLanguage: context.toggleLanguage,
-  };
+  return { t: context.t, locale: context.locale };
 }

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Menu, X, User, LogOut, Globe } from 'lucide-react';
+import { Menu, X, User, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useI18n } from '@/lib/i18n-context';
 
@@ -15,7 +15,7 @@ interface HeaderProps {
 
 export function Header({ isLoggedIn = false, userName, onLogout }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { t, language, toggleLanguage } = useI18n();
+  const { t } = useI18n();
 
   // Complete navigation links - always visible on all pages
   const navLinks = [
@@ -63,20 +63,8 @@ export function Header({ isLoggedIn = false, userName, onLogout }: HeaderProps) 
           ))}
         </div>
 
-        {/* Right Section: Language Switch + User Menu */}
+        {/* Right Section: User Menu only (no language switch) */}
         <div className="hidden md:flex items-center gap-3">
-          {/* Language Switch Button - More visible with icon + text */}
-          <button
-            onClick={toggleLanguage}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-teal-50 hover:bg-teal-100 border border-teal-200 transition-all text-sm font-medium shadow-sm hover:shadow"
-            title={language === 'zh-CN' ? '切换到英文' : 'Switch to Chinese'}
-          >
-            <Globe className="w-5 h-5 text-teal-600" />
-            <span className="text-teal-700 font-semibold">
-              {language === 'zh-CN' ? '中文' : 'EN'}
-            </span>
-          </button>
-
           {isLoggedIn ? (
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2 text-gray-600">
@@ -119,17 +107,6 @@ export function Header({ isLoggedIn = false, userName, onLogout }: HeaderProps) 
         )}
       >
         <div className="container mx-auto px-4 py-4 space-y-3">
-          {/* Language Switch in Mobile - More visible */}
-          <button
-            onClick={toggleLanguage}
-            className="flex items-center gap-2 py-3 px-4 rounded-lg bg-teal-50 hover:bg-teal-100 border border-teal-200 text-teal-700 font-semibold w-full"
-          >
-            <Globe className="w-5 h-5 text-teal-600" />
-            <span>
-              {language === 'zh-CN' ? '🌐 中文 (点击切换英文)' : '🌐 EN (点击切换中文)'}
-            </span>
-          </button>
-
           {/* All navigation links in mobile menu */}
           {navLinks.map((link) => (
             <Link
