@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { DashboardPageClient } from './client';
+import DashboardPageClient from './client';
 
 export const metadata: Metadata = {
   title: 'Dashboard - FitWiz',

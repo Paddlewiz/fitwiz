@@ -1,356 +1,362 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useI18n } from '@/lib/i18n-context';
+import { useOnboarding } from '@/lib/onboarding-context';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+import { getSupabaseBrowserClient } from '@/lib/supabase-browser';
+import { StatsCards } from '@/components/dashboard/stats-cards';
+import { WeightTrendChart } from '@/components/charts/weight-trend-chart';
+import { CalorieBalanceChart } from '@/components/charts/calorie-balance-chart';
+import { GoalProgressRing } from '@/components/charts/goal-progress-ring';
+import { EmptyState } from '@/components/dashboard/empty-state';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import { useSupabaseConfig } from '@/lib/supabase-config-inject';
-import { getSupabaseBrowserClientWithRetry } from '@/lib/supabase-browser';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import {
-  Scale,
-  Calculator,
-  TrendingDown,
-  Target,
-  Plus,
-  ArrowRight,
-  Loader2,
-  Flame,
-  Activity,
-} from 'lucide-react';
-import { useTranslation } from '@/lib/i18n-context';
-
-interface UserProfile {
-  display_name: string | null;
-  target_weight: string | null;
-  height: string | null;
-}
+import { Card, CardContent } from '@/components/ui/card';
+import { Plus, Scale, Calculator, BarChart3, ArrowRight, RefreshCw } from 'lucide-react';
+import Link from 'next/link';
 
 interface BodyMetric {
   id: string;
-  recorded_at: string;
-  weight: string | null;
-  bmi: string | null;
+  created_at: string;
+  weight: number;
+  body_fat?: number;
+  bmi?: number;
+  body_age?: number;
+  visceral_fat?: number;
+  muscle_mass?: number;
+  bone_mass?: number;
+  water_percent?: number;
 }
 
-export function DashboardPageClient() {
+export default function DashboardClient() {
+  const { t } = useI18n();
   const router = useRouter();
-  const { isLoading: configLoading } = useSupabaseConfig();
-  const { t, locale } = useTranslation();
-
-  const [user, setUser] = useState<{ id: string; email?: string } | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const { isCompleted, data: onboardingData, restartOnboarding } = useOnboarding();
   const [metrics, setMetrics] = useState<BodyMetric[]>([]);
-  const [latestMetric, setLatestMetric] = useState<BodyMetric | null>(null);
-
-  // Check auth and fetch data
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [profileData, setProfileData] = useState<{
+    target_weight?: number;
+    height?: number;
+    recommended_calories?: number;
+  }>({});
+  
+  const supabase = getSupabaseBrowserClient();
+  
+  // Check authentication and fetch data
   useEffect(() => {
-    const init = async () => {
+    const fetchData = async () => {
       try {
-        const supabase = await getSupabaseBrowserClientWithRetry();
-        const { data: { user } } = await supabase.auth.getUser();
-
-        if (!user) {
-          router.push('/login');
+        // Check session
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session) {
+          setIsAuthenticated(false);
+          setLoading(false);
           return;
         }
-
-        setUser(user);
-
-        // Get user profile
-        const { data: profileData } = await supabase
-          .from('user_profiles')
-          .select('*')
-          .eq('user_id', user.id)
-          .maybeSingle();
-
-        if (profileData) {
-          setProfile(profileData);
+        
+        setIsAuthenticated(true);
+        
+        // Fetch body metrics
+        const response = await fetch('/api/metrics', {
+          headers: {
+            'x-session': session.access_token,
+          },
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          setMetrics(result.data || []);
+        } else {
+          setError(t('common.error'));
         }
-
-        // Get body metrics (last 30 days)
-        const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-        const { data: metricsData } = await supabase
-          .from('body_metrics')
-          .select('id, recorded_at, weight, bmi')
-          .eq('user_id', user.id)
-          .gte('recorded_at', thirtyDaysAgo.toISOString())
-          .order('recorded_at', { ascending: false })
-          .limit(30);
-
-        if (metricsData && metricsData.length > 0) {
-          setMetrics(metricsData);
-          setLatestMetric(metricsData[0]);
+        
+        // Fetch user profile for target weight
+        const profileResponse = await fetch('/api/profile', {
+          headers: {
+            'x-session': session.access_token,
+          },
+        });
+        
+        if (profileResponse.ok) {
+          const profileResult = await profileResponse.json();
+          setProfileData(profileResult.data || {});
         }
+        
       } catch (err) {
-        console.error(err);
+        console.error('Error fetching data:', err);
+        setError(t('common.error'));
       } finally {
         setLoading(false);
       }
     };
-
-    if (!configLoading) {
-      init();
-    }
-  }, [configLoading, router]);
-
-  // Handle logout
-  const handleLogout = async () => {
-    try {
-      const supabase = await getSupabaseBrowserClientWithRetry();
-      await supabase.auth.signOut();
-      router.push('/login');
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
+    
+    fetchData();
+  }, [supabase, t]);
+  
   // Prepare chart data
-  const chartData = metrics
-    .slice()
-    .reverse()
-    .map((m) => ({
-      date: new Date(m.recorded_at).toLocaleDateString(locale === 'zh-CN' ? 'zh-CN' : 'en-US', { month: 'short', day: 'numeric' }),
-      weight: m.weight ? parseFloat(m.weight) : null,
+  const prepareChartData = useCallback(() => {
+    if (metrics.length === 0) return [];
+    
+    // Sort by date ascending
+    const sortedMetrics = [...metrics].sort((a, b) => 
+      new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    );
+    
+    return sortedMetrics.map(metric => ({
+      date: metric.created_at,
+      displayDate: formatDate(metric.created_at),
+      weight: metric.weight,
     }));
-
-  // Calculate progress
-  const calculateProgress = (): { current: number; target: number; progress: number } | null => {
-    if (!latestMetric?.weight || !profile?.target_weight) return null;
-    const current = parseFloat(latestMetric.weight);
-    const target = parseFloat(profile.target_weight);
-    // Assume starting weight was current + 10% difference (for demo)
-    const startWeight = current + (current - target) * 0.5;
-    const progress = Math.min(100, Math.max(0, ((startWeight - current) / (startWeight - target)) * 100));
-    return { current, target, progress };
+  }, [metrics]);
+  
+  // Prepare calorie chart data (mock for now, will integrate with diet logs)
+  const prepareCalorieData = useCallback(() => {
+    // Generate mock data for last 7 days
+    const last7Days = [];
+    const targetCalories = profileData.recommended_calories || onboardingData.recommendedCalories || 1800;
+    
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      const intake = Math.floor(1500 + Math.random() * 600); // Mock intake
+      last7Days.push({
+        date: date.toISOString(),
+        displayDate: `${date.getMonth() + 1}/${date.getDate()}`,
+        intake,
+        target: targetCalories,
+        balance: intake - targetCalories,
+      });
+    }
+    
+    return last7Days;
+  }, [profileData.recommended_calories, onboardingData.recommendedCalories]);
+  
+  // Format date helper
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return `${date.getMonth() + 1}/${date.getDate()}`;
   };
-
-  const progressData = calculateProgress();
-
-  // Get BMI category
-  const getBMICategory = (bmi: string) => {
-    const bmiValue = parseFloat(bmi);
-    if (bmiValue < 18.5) return t('bmi.underweight');
-    if (bmiValue < 25) return t('bmi.normal');
-    if (bmiValue < 30) return t('bmi.overweight');
-    return t('bmi.obese');
-  };
-
-  if (configLoading || loading) {
+  
+  // Calculate current stats
+  const latestMetric = metrics.length > 0 
+    ? metrics.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0]
+    : null;
+  
+  const previousMetric = metrics.length > 1 
+    ? metrics.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[1]
+    : null;
+  
+  const currentWeight = latestMetric?.weight || onboardingData.currentWeight;
+  const previousWeight = previousMetric?.weight || onboardingData.currentWeight;
+  const currentBMI = latestMetric?.bmi || onboardingData.calculatedBMI;
+  const targetWeight = profileData.target_weight || onboardingData.targetWeight;
+  const startWeight = metrics.length > 0 
+    ? metrics.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())[0].weight
+    : onboardingData.currentWeight;
+  
+  // Quick Actions
+  const QuickActions = () => (
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <Link href="/metrics">
+        <Button variant="outline" className="w-full h-auto py-3 flex-col gap-1">
+          <Scale className="w-5 h-5 text-teal-500" />
+          <span className="text-sm">{t('dashboard.logWeight')}</span>
+        </Button>
+      </Link>
+      <Link href="/calculators/tdee">
+        <Button variant="outline" className="w-full h-auto py-3 flex-col gap-1">
+          <Calculator className="w-5 h-5 text-teal-500" />
+          <span className="text-sm">{t('dashboard.tdeeCalc')}</span>
+        </Button>
+      </Link>
+      <Link href="/calculators/bmi">
+        <Button variant="outline" className="w-full h-auto py-3 flex-col gap-1">
+          <BarChart3 className="w-5 h-5 text-teal-500" />
+          <span className="text-sm">{t('dashboard.bmiCalc')}</span>
+        </Button>
+      </Link>
+      <Link href="/metrics">
+        <Button variant="outline" className="w-full h-auto py-3 flex-col gap-1">
+          <Plus className="w-5 h-5 text-teal-500" />
+          <span className="text-sm">{t('dashboard.fullMetrics')}</span>
+        </Button>
+      </Link>
+    </div>
+  );
+  
+  if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <Loader2 className="w-8 h-8 animate-spin text-teal-500" />
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-gray-500">{t('common.loading')}</p>
       </div>
     );
   }
-
-  return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">{t('dashboard.title')}</h1>
-            <p className="text-gray-600">
-              {t('dashboard.welcome')}, {profile?.display_name || user?.email?.split('@')[0] || t('common.user')}!
-            </p>
-          </div>
-          <Button variant="outline" onClick={handleLogout} className="text-gray-600">
-            {t('common.logout')}
-          </Button>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <Link href="/metrics">
-            <Card className="shadow-sm hover:shadow-md transition-shadow cursor-pointer bg-teal-50 border-teal-100">
-              <CardContent className="p-4 flex items-center gap-3">
-                <Plus className="w-5 h-5 text-teal-600" />
-                <span className="font-medium text-teal-700">{t('dashboard.logWeight')}</span>
-              </CardContent>
-            </Card>
-          </Link>
-          <Link href="/calculators/tdee">
-            <Card className="shadow-sm hover:shadow-md transition-shadow cursor-pointer bg-blue-50 border-blue-100">
-              <CardContent className="p-4 flex items-center gap-3">
-                <Calculator className="w-5 h-5 text-blue-600" />
-                <span className="font-medium text-blue-700">{t('dashboard.tdeeCalc')}</span>
-              </CardContent>
-            </Card>
-          </Link>
-          <Link href="/calculators/bmi">
-            <Card className="shadow-sm hover:shadow-md transition-shadow cursor-pointer bg-green-50 border-green-100">
-              <CardContent className="p-4 flex items-center gap-3">
-                <Scale className="w-5 h-5 text-green-600" />
-                <span className="font-medium text-green-700">{t('dashboard.bmiCalc')}</span>
-              </CardContent>
-            </Card>
-          </Link>
-          <Link href="/metrics">
-            <Card className="shadow-sm hover:shadow-md transition-shadow cursor-pointer bg-amber-50 border-amber-100">
-              <CardContent className="p-4 flex items-center gap-3">
-                <Activity className="w-5 h-5 text-amber-600" />
-                <span className="font-medium text-amber-700">{t('dashboard.fullMetrics')}</span>
-              </CardContent>
-            </Card>
-          </Link>
-        </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <Card className="shadow-md">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-gray-600 flex items-center gap-2">
-                <Scale className="w-4 h-4 text-teal-500" />
-                {t('dashboard.currentWeight')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold text-teal-600">
-                {latestMetric?.weight ? `${latestMetric.weight} kg` : t('common.noData')}
-              </p>
-              {metrics.length > 1 && (
-                <p className="text-sm text-gray-500 mt-1">
-                  {parseFloat(metrics[0].weight || '0') < parseFloat(metrics[1].weight || '0')
-                    ? t('dashboard.downFromLast')
-                    : t('dashboard.upFromLast')}
-                </p>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-md">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-gray-600 flex items-center gap-2">
-                <Calculator className="w-4 h-4 text-green-500" />
-                {t('dashboard.currentBMI')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold text-green-600">
-                {latestMetric?.bmi ? latestMetric.bmi : t('common.noData')}
-              </p>
-              {latestMetric?.bmi && (
-                <p className="text-sm text-gray-500 mt-1">
-                  {getBMICategory(latestMetric.bmi)}
-                </p>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-md">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-gray-600 flex items-center gap-2">
-                <Flame className="w-4 h-4 text-amber-500" />
-                {t('dashboard.calorieBalance')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-3xl font-bold text-amber-600">--</p>
-              <p className="text-sm text-gray-500 mt-1">{t('dashboard.startTracking')}</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Progress to Target */}
-        {progressData && (
-          <Card className="shadow-md mb-6">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Target className="w-5 h-5 text-teal-500" />
-                {t('dashboard.progressToTarget')}
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex justify-between text-sm">
-                <span>{t('dashboard.current')}: {progressData.current} kg</span>
-                <span>{t('dashboard.target')}: {progressData.target} kg</span>
-              </div>
-              <Progress value={progressData.progress} className="h-4" />
-              <p className="text-center text-gray-600">
-                {progressData.progress < 100
-                  ? `${Math.round(progressData.progress)}% ${t('dashboard.complete')}`
-                  : t('dashboard.goalAchieved')}
-              </p>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Weight Trend Chart */}
-        <Card className="shadow-md mb-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingDown className="w-5 h-5 text-teal-500" />
-              {t('dashboard.weightTrend')}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {metrics.length === 0 ? (
-              <div className="text-center py-8 text-gray-600">
-                <TrendingDown className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                <p>{t('dashboard.noWeightData')}</p>
-                <Link href="/metrics">
-                  <Button className="mt-4 bg-teal-500 hover:bg-teal-600">
-                    {t('dashboard.startTracking')}
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                  </Button>
-                </Link>
-              </div>
-            ) : (
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                  <XAxis dataKey="date" tick={{ fill: '#4B5563' }} />
-                  <YAxis
-                    tick={{ fill: '#4B5563' }}
-                    domain={['auto', 'auto']}
-                    label={{ value: 'kg', angle: -90, position: 'insideLeft', fill: '#4B5563' }}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: '#fff',
-                      border: '1px solid #E5E7EB',
-                      borderRadius: '8px',
-                    }}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="weight"
-                    stroke="#10B981"
-                    strokeWidth={2}
-                    dot={{ fill: '#10B981', strokeWidth: 2 }}
-                    activeDot={{ r: 6 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            )}
+  
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Card className="max-w-md mx-auto">
+          <CardContent className="p-6 text-center">
+            <p className="text-gray-600 mb-4">{t('dashboard.loginRequired')}</p>
+            <Link href="/login">
+              <Button className="bg-teal-500 hover:bg-teal-600">
+                {t('nav.login')}
+              </Button>
+            </Link>
           </CardContent>
         </Card>
-
-        {/* Call to Action */}
-        {!profile?.target_weight && (
-          <Card className="shadow-md bg-teal-50 border-teal-100">
-            <CardContent className="p-6 text-center">
-              <Target className="w-8 h-8 mx-auto mb-4 text-teal-600" />
-              <p className="text-teal-700 font-medium mb-2">{t('dashboard.setWeightGoal')}</p>
-              <p className="text-teal-600 text-sm mb-4">
-                {t('dashboard.defineTargetDesc')}
-              </p>
-              <Link href="/metrics">
-                <Button className="bg-teal-500 hover:bg-teal-600">
-                  {t('dashboard.setGoal')}
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              </Link>
+      </div>
+    );
+  }
+  
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Card className="max-w-md mx-auto">
+          <CardContent className="p-6 text-center">
+            <p className="text-red-500 mb-4">{error}</p>
+            <Button variant="outline" onClick={() => window.location.reload()}>
+              {t('common.retry')}
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+  
+  return (
+    <div className="min-h-screen pb-20">
+      {/* Header */}
+      <div className="bg-teal-500 text-white px-4 py-6 mb-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold">{t('dashboard.welcome')}</h1>
+            <p className="text-teal-100 text-sm mt-1">
+              {t('dashboard.progressToTarget')}
+            </p>
+          </div>
+          <Button 
+            variant="ghost" 
+            size="sm"
+            onClick={restartOnboarding}
+            className="text-white hover:bg-teal-600"
+          >
+            <RefreshCw className="w-4 h-4 mr-1" />
+            {t('dashboard.startTracking')}
+          </Button>
+        </div>
+      </div>
+      
+      {/* Quick Actions */}
+      <div className="px-4 mb-6">
+        <QuickActions />
+      </div>
+      
+      {/* Stats Cards */}
+      <div className="px-4 mb-6">
+        <StatsCards 
+          currentWeight={currentWeight}
+          previousWeight={previousWeight}
+          bmi={currentBMI}
+          todayCalories={prepareCalorieData()[6]?.intake}
+          targetCalories={profileData.recommended_calories || onboardingData.recommendedCalories}
+        />
+      </div>
+      
+      {/* Main Content */}
+      {metrics.length === 0 && !onboardingData.currentWeight ? (
+        /* Empty State */
+        <div className="px-4">
+          <EmptyState type="welcome" />
+        </div>
+      ) : (
+        /* Charts Section */
+        <div className="px-4 space-y-6">
+          {/* Weight Trend Chart */}
+          <WeightTrendChart 
+            data={prepareChartData()}
+            targetWeight={targetWeight}
+            currentWeight={currentWeight}
+          />
+          
+          {/* Charts Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Calorie Balance Chart */}
+            <CalorieBalanceChart data={prepareCalorieData()} />
+            
+            {/* Goal Progress Ring */}
+            {targetWeight && startWeight && currentWeight && (
+              <GoalProgressRing 
+                currentWeight={currentWeight}
+                startWeight={startWeight}
+                targetWeight={targetWeight}
+              />
+            )}
+            
+            {/* No Goal Set */}
+            {!targetWeight && (
+              <EmptyState type="no-goal" />
+            )}
+          </div>
+          
+          {/* Recent Records */}
+          {metrics.length > 0 && (
+            <Card className="bg-white shadow-sm">
+              <CardContent className="p-4">
+                <h3 className="font-semibold text-gray-800 mb-4">
+                  {t('metrics.recentRecords')}
+                </h3>
+                <div className="space-y-3">
+                  {metrics.slice(0, 5).map((metric, index) => (
+                    <div key={metric.id} className="flex justify-between items-center py-2 border-b border-gray-100 last:border-0">
+                      <div>
+                        <p className="font-medium">{metric.weight.toFixed(1)} kg</p>
+                        <p className="text-xs text-gray-500">
+                          {new Date(metric.created_at).toLocaleDateString('zh-CN')}
+                        </p>
+                      </div>
+                      {index > 0 && metrics[index - 1] && (
+                        <div className="flex items-center gap-1">
+                          {metric.weight < metrics[index - 1].weight ? (
+                            <span className="text-green-500 text-sm">
+                              ↓ {(metrics[index - 1].weight - metric.weight).toFixed(1)} kg
+                            </span>
+                          ) : metric.weight > metrics[index - 1].weight ? (
+                            <span className="text-red-500 text-sm">
+                              ↑ {(metric.weight - metrics[index - 1].weight).toFixed(1)} kg
+                            </span>
+                          ) : (
+                            <span className="text-gray-400 text-sm">-</span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+          
+          {/* Guidance to next step */}
+          <Card className="bg-teal-50 border-teal-200">
+            <CardContent className="p-4">
+              <div className="flex justify-between items-center">
+                <div>
+                  <p className="font-medium text-teal-700">
+                    {t('guidance.toDashboard')}
+                  </p>
+                </div>
+                <Link href="/metrics">
+                  <ArrowRight className="w-5 h-5 text-teal-500" />
+                </Link>
+              </div>
             </CardContent>
           </Card>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

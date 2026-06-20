@@ -12,7 +12,7 @@ type Translation = Record<string, any>;
 interface I18nContextType {
   language: Language;
   locale: Language; // alias for language, used by components
-  t: (key: string) => string;
+  t: (key: string, params?: Record<string, unknown>) => string;
 }
 
 // Create context
@@ -39,7 +39,7 @@ const SITE_LANGUAGE = getSiteLanguage();
 // Provider component - simplified for single language mode
 export function I18nProvider({ children }: { children: ReactNode }) {
   // Translation function - uses fixed language from environment variable
-  const t = useCallback((key: string): string => {
+  const t = useCallback((key: string, params?: Record<string, unknown>): string => {
     const keys = key.split('.');
     let value: any = translations[SITE_LANGUAGE];
     
@@ -56,11 +56,21 @@ export function I18nProvider({ children }: { children: ReactNode }) {
             return key; // Return key if not found in any language
           }
         }
-        return typeof fallback === 'string' ? fallback : key;
+        value = typeof fallback === 'string' ? fallback : key;
+        break;
       }
     }
     
-    return typeof value === 'string' ? value : key;
+    let result = typeof value === 'string' ? value : key;
+    
+    // Replace parameters like {{param}} with actual values
+    if (params) {
+      Object.entries(params).forEach(([paramKey, paramValue]) => {
+        result = result.replace(new RegExp(`\\{\\{${paramKey}\\}\\}`, 'g'), String(paramValue));
+      });
+    }
+    
+    return result;
   }, []);
 
   return (

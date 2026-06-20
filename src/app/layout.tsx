@@ -3,6 +3,8 @@ import { Inspector } from 'react-dev-inspector';
 import './globals.css';
 import { SupabaseConfigProvider } from '@/lib/supabase-config-inject';
 import { I18nProvider } from '@/lib/i18n-context';
+import { OnboardingProvider } from '@/lib/onboarding-context';
+import { OnboardingModal } from '@/components/onboarding/onboarding-modal';
 
 export const metadata: Metadata = {
   title: {
@@ -61,9 +63,12 @@ export default function RootLayout({
       <body className={`antialiased bg-gray-50`}>
         {isDev && <Inspector />}
         <I18nProvider>
-          <SupabaseConfigProvider>
-            {children}
-          </SupabaseConfigProvider>
+          <OnboardingProvider>
+            <SupabaseConfigProvider>
+              <OnboardingModal />
+              {children}
+            </SupabaseConfigProvider>
+          </OnboardingProvider>
         </I18nProvider>
       </body>
     </html>
