@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 
 interface EmptyStateProps {
-  type: 'no-weight' | 'no-calorie' | 'no-goal' | 'welcome';
+  type: 'no-weight' | 'no-calorie' | 'no-calorie-data' | 'no-goal' | 'welcome';
   onRecordClick?: () => void;
   onGoalClick?: () => void;
 }
@@ -88,6 +88,32 @@ export function EmptyState({ type, onRecordClick, onGoalClick }: EmptyStateProps
           <p className="text-gray-500">
             {t('emptyState.noCalorieDesc')}
           </p>
+        </CardContent>
+      </Card>
+    );
+  }
+  
+  if (type === 'no-calorie-data') {
+    return (
+      <Card className="bg-white border-gray-200">
+        <CardContent className="p-6 text-center">
+          <div className="w-16 h-16 bg-orange-50 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Plus className="w-8 h-8 text-orange-500" />
+          </div>
+          <h3 className="text-lg font-semibold text-gray-800 mb-2">
+            {t('emptyState.noCalorieDataTitle')}
+          </h3>
+          <p className="text-gray-600 mb-4">
+            {t('emptyState.noCalorieDataDesc')}
+          </p>
+          <Button 
+            onClick={handleRecordWeight}
+            variant="outline"
+            className="border-teal-500 text-teal-600 hover:bg-teal-50"
+          >
+            <ArrowRight className="w-4 h-4 mr-2" />
+            {t('emptyState.goRecordDiet')}
+          </Button>
         </CardContent>
       </Card>
     );

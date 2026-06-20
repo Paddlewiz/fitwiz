@@ -29,6 +29,27 @@ interface BodyMetric {
   water_percent?: number;
 }
 
+interface DailyCalorieData {
+  date: string;
+  displayDate: string;
+  intake: number;
+  target: number;
+  deficit: number;
+  exerciseBurn?: number;
+  protein?: number;
+}
+
+// Helper function to format date
+const formatDate = (dateStr: string) => {
+  const date = new Date(dateStr);
+  return `${date.getMonth() + 1}/${date.getDate()}`;
+};
+
+// Helper function to get date string for comparison
+const getDateString = (date: Date) => {
+  return date.toISOString().split('T')[0];
+};
+
 export default function DashboardClient() {
   const { t } = useI18n();
   const router = useRouter();
@@ -37,13 +58,57 @@ export default function DashboardClient() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  
+  // Profile data
   const [profileData, setProfileData] = useState<{
     target_weight?: number;
     height?: number;
     recommended_calories?: number;
+    age?: number;
+    gender?: string;
+    activity_level?: string;
   }>({});
   
+  // Today's actual data from database (NO MOCK DATA)
+  const [todayIntake, setTodayIntake] = useState(0);
+  const [todayProtein, setTodayProtein] = useState(0);
+  const [todayExercise, setTodayExercise] = useState(0);
+  const [weeklyCalorieData, setWeeklyCalorieData] = useState<DailyCalorieData[]>([]);
+  
   const supabase = getSupabaseBrowserClient();
+  
+  // Calculate TDEE from user profile (if available)
+  const calculateTDEE = useCallback(() => {
+    const weight = metrics.length > 0 ? metrics[0].weight : onboardingData.currentWeight;
+    const height = profileData.height || onboardingData.height;
+    const age = profileData.age || onboardingData.age;
+    const gender = profileData.gender || onboardingData.gender;
+    const activityLevel = profileData.activity_level || 'moderate';
+    
+    if (!weight || !height || !age || !gender) {
+      return profileData.recommended_calories || onboardingData.recommendedCalories || 1800;
+    }
+    
+    // Mifflin-St Jeor formula
+    let bmr: number;
+    if (gender === 'male') {
+      bmr = 10 * weight + 6.25 * height - 5 * age + 5;
+    } else {
+      bmr = 10 * weight + 6.25 * height - 5 * age - 161;
+    }
+    
+    // Activity multiplier
+    const activityMultipliers: Record<string, number> = {
+      sedentary: 1.2,
+      light: 1.375,
+      moderate: 1.55,
+      active: 1.725,
+      veryActive: 1.9,
+    };
+    
+    const multiplier = activityMultipliers[activityLevel] || 1.55;
+    return Math.round(bmr * multiplier);
+  }, [metrics, profileData, onboardingData]);
   
   // Check authentication and fetch data
   useEffect(() => {
@@ -60,21 +125,25 @@ export default function DashboardClient() {
         
         setIsAuthenticated(true);
         
-        // Fetch body metrics
-        const response = await fetch('/api/metrics', {
+        // Fetch metrics data (includes diet_logs and exercise_logs)
+        const metricsResponse = await fetch('/api/metrics', {
           headers: {
             'x-session': session.access_token,
           },
         });
         
-        if (response.ok) {
-          const result = await response.json();
-          setMetrics(result.data || []);
-        } else {
-          setError(t('common.error'));
+        if (metricsResponse.ok) {
+          const metricsResult = await metricsResponse.json();
+          setMetrics(metricsResult.metrics || []);
+          
+          // Set today's actual data from API response (NO MOCK DATA)
+          setTodayIntake(metricsResult.todayIntake || 0);
+          setTodayProtein(metricsResult.todayProtein || 0);
+          setTodayExercise(metricsResult.todayExercise || 0);
+          setWeeklyCalorieData(metricsResult.weeklyCalorieData || []);
         }
         
-        // Fetch user profile for target weight
+        // Fetch user profile for target weight and TDEE calculation
         const profileResponse = await fetch('/api/profile', {
           headers: {
             'x-session': session.access_token,
@@ -83,7 +152,7 @@ export default function DashboardClient() {
         
         if (profileResponse.ok) {
           const profileResult = await profileResponse.json();
-          setProfileData(profileResult.data || {});
+          setProfileData(profileResult.profile || {});
         }
         
       } catch (err) {
@@ -97,7 +166,7 @@ export default function DashboardClient() {
     fetchData();
   }, [supabase, t]);
   
-  // Prepare chart data
+  // Prepare chart data from actual metrics
   const prepareChartData = useCallback(() => {
     if (metrics.length === 0) return [];
     
@@ -113,97 +182,62 @@ export default function DashboardClient() {
     }));
   }, [metrics]);
   
-  // Prepare calorie chart data (mock for now, will integrate with diet logs)
-  const prepareCalorieData = useCallback(() => {
-    // Generate mock data for last 7 days
-    const last7Days = [];
-    const targetCalories = profileData.recommended_calories || onboardingData.recommendedCalories || 1800;
-    
-    for (let i = 6; i >= 0; i--) {
-      const date = new Date();
-      date.setDate(date.getDate() - i);
-      const intake = Math.floor(1500 + Math.random() * 600); // Mock intake
-      last7Days.push({
-        date: date.toISOString(),
-        displayDate: `${date.getMonth() + 1}/${date.getDate()}`,
-        intake,
-        target: targetCalories,
-        balance: intake - targetCalories,
-      });
-    }
-    
-    return last7Days;
-  }, [profileData.recommended_calories, onboardingData.recommendedCalories]);
+  // Get current weight from latest metric or onboarding data
+  const currentWeight = metrics.length > 0 
+    ? metrics.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0].weight 
+    : onboardingData.currentWeight || undefined;
   
-  // Format date helper
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return `${date.getMonth() + 1}/${date.getDate()}`;
-  };
+  const previousWeight = metrics.length > 1 
+    ? metrics.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[1].weight 
+    : undefined;
   
-  // Calculate current stats
-  const latestMetric = metrics.length > 0 
-    ? metrics.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0]
-    : null;
+  // Calculate BMI if we have weight and height
+  const heightInCm = profileData.height ?? onboardingData?.height;
+  const currentBMI = currentWeight && heightInCm
+    ? currentWeight / Math.pow(heightInCm / 100, 2)
+    : metrics.length > 0 ? metrics[0].bmi : undefined;
   
-  const previousMetric = metrics.length > 1 
-    ? metrics.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[1]
-    : null;
-  
-  const currentWeight = latestMetric?.weight || onboardingData.currentWeight;
-  const previousWeight = previousMetric?.weight || onboardingData.currentWeight;
-  const currentBMI = latestMetric?.bmi || onboardingData.calculatedBMI;
+  // Target weight from profile or onboarding
   const targetWeight = profileData.target_weight || onboardingData.targetWeight;
-  const startWeight = metrics.length > 0 
-    ? metrics.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())[0].weight
-    : onboardingData.currentWeight;
+  const startWeight = onboardingData.currentWeight || (metrics.length > 0 
+    ? metrics.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())[0].weight 
+    : undefined);
   
-  // Quick Actions
-  const QuickActions = () => (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-      <Link href="/metrics">
-        <Button variant="outline" className="w-full h-auto py-3 flex-col gap-1">
-          <Scale className="w-5 h-5 text-teal-500" />
-          <span className="text-sm">{t('dashboard.logWeight')}</span>
-        </Button>
-      </Link>
-      <Link href="/calculators/tdee">
-        <Button variant="outline" className="w-full h-auto py-3 flex-col gap-1">
-          <Calculator className="w-5 h-5 text-teal-500" />
-          <span className="text-sm">{t('dashboard.tdeeCalc')}</span>
-        </Button>
-      </Link>
-      <Link href="/calculators/bmi">
-        <Button variant="outline" className="w-full h-auto py-3 flex-col gap-1">
-          <BarChart3 className="w-5 h-5 text-teal-500" />
-          <span className="text-sm">{t('dashboard.bmiCalc')}</span>
-        </Button>
-      </Link>
-      <Link href="/metrics">
-        <Button variant="outline" className="w-full h-auto py-3 flex-col gap-1">
-          <Plus className="w-5 h-5 text-teal-500" />
-          <span className="text-sm">{t('dashboard.fullMetrics')}</span>
-        </Button>
-      </Link>
-    </div>
-  );
+  // Calculate targets based on TDEE
+  const tdee = calculateTDEE();
+  const targetCalories = profileData.recommended_calories || onboardingData.recommendedCalories || Math.round(tdee * 0.8);
   
+  // Recommended targets for gamified panel
+  const proteinTarget = Math.round((targetCalories * 0.25) / 4); // 25% of calories from protein, 4 cal per gram
+  const energyDeficitTarget = Math.max(0, tdee - targetCalories); // Daily deficit target
+  const exerciseTarget = 300; // Standard exercise burn target
+  
+  // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-500">{t('common.loading')}</p>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <RefreshCw className="w-8 h-8 text-teal-600 animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">{t('common.loading')}</p>
+        </div>
       </div>
     );
   }
   
+  // Not authenticated state
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Card className="max-w-md mx-auto">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+        <Card className="max-w-md w-full bg-white shadow-lg">
           <CardContent className="p-6 text-center">
-            <p className="text-gray-600 mb-4">{t('dashboard.loginRequired')}</p>
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">
+              {t('dashboard.loginRequired')}
+            </h2>
+            <p className="text-gray-600 mb-6">
+              {t('dashboard.loginHint')}
+            </p>
             <Link href="/login">
-              <Button className="bg-teal-500 hover:bg-teal-600">
+              <Button className="w-full bg-teal-600 hover:bg-teal-700">
                 {t('nav.login')}
               </Button>
             </Link>
@@ -213,13 +247,16 @@ export default function DashboardClient() {
     );
   }
   
+  // Error state
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Card className="max-w-md mx-auto">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+        <Card className="max-w-md w-full bg-white shadow-lg">
           <CardContent className="p-6 text-center">
-            <p className="text-red-500 mb-4">{error}</p>
-            <Button variant="outline" onClick={() => window.location.reload()}>
+            <h2 className="text-xl font-semibold text-red-600 mb-4">
+              {t('common.error')}
+            </h2>
+            <Button onClick={() => window.location.reload()} className="bg-teal-600 hover:bg-teal-700">
               {t('common.retry')}
             </Button>
           </CardContent>
@@ -229,54 +266,77 @@ export default function DashboardClient() {
   }
   
   return (
-    <div className="min-h-screen pb-20">
+    <div className="min-h-screen bg-gray-50 pb-20">
       {/* Header */}
-      <div className="bg-teal-500 text-white px-4 py-6 mb-6">
-        <div className="flex justify-between items-center">
+      <div className="bg-gradient-to-r from-teal-600 to-teal-700 text-white px-4 py-6">
+        <div className="flex justify-between items-start">
           <div>
             <h1 className="text-2xl font-bold">{t('dashboard.welcome')}</h1>
-            <p className="text-teal-100 text-sm mt-1">
-              {t('dashboard.progressToTarget')}
-            </p>
+            <p className="text-teal-100 mt-1">{t('dashboard.subtitle')}</p>
           </div>
           <Button 
-            variant="ghost" 
+            variant="outline" 
             size="sm"
+            className="bg-white/10 border-white/20 text-white hover:bg-white/20"
             onClick={restartOnboarding}
-            className="text-white hover:bg-teal-600"
           >
             <RefreshCw className="w-4 h-4 mr-1" />
-            {t('dashboard.startTracking')}
+            {t('onboarding.restart')}
           </Button>
         </div>
       </div>
       
       {/* Quick Actions */}
       <div className="px-4 mb-6">
-        <QuickActions />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <Link href="/metrics">
+            <Button className="w-full bg-teal-600 hover:bg-teal-700 h-12">
+              <Plus className="w-4 h-4 mr-2" />
+              {t('dashboard.logWeight')}
+            </Button>
+          </Link>
+          <Link href="/calculators/tdee">
+            <Button variant="outline" className="w-full h-12">
+              <Calculator className="w-4 h-4 mr-2" />
+              {t('dashboard.tdeeCalc')}
+            </Button>
+          </Link>
+          <Link href="/calculators/bmi">
+            <Button variant="outline" className="w-full h-12">
+              <BarChart3 className="w-4 h-4 mr-2" />
+              {t('dashboard.bmiCalc')}
+            </Button>
+          </Link>
+          <Link href="/metrics">
+            <Button variant="outline" className="w-full h-12">
+              <Scale className="w-4 h-4 mr-2" />
+              {t('dashboard.fullMetrics')}
+            </Button>
+          </Link>
+        </div>
       </div>
       
-      {/* Stats Cards */}
+      {/* Stats Cards - Using REAL data only */}
       <div className="px-4 mb-6">
         <StatsCards 
           currentWeight={currentWeight}
           previousWeight={previousWeight}
           bmi={currentBMI}
-          todayCalories={prepareCalorieData()[6]?.intake}
-          targetCalories={profileData.recommended_calories || onboardingData.recommendedCalories}
+          todayCalories={todayIntake}
+          targetCalories={targetCalories}
         />
       </div>
       
-      {/* Gamified Health Panel - FIFA Style */}
+      {/* Gamified Health Panel - Using REAL data only */}
       <div className="px-4 mb-6">
         <GamifiedHealthPanel
-          tdee={2000}
-          todayIntake={prepareCalorieData()[6]?.intake || 0}
-          todayProtein={0}
-          todayExercise={0}
-          proteinTarget={60}
-          energyDeficitTarget={300}
-          exerciseTarget={300}
+          tdee={tdee}
+          todayIntake={todayIntake}
+          todayProtein={todayProtein}
+          todayExercise={todayExercise}
+          proteinTarget={proteinTarget}
+          energyDeficitTarget={energyDeficitTarget}
+          exerciseTarget={exerciseTarget}
         />
       </div>
       
@@ -298,20 +358,29 @@ export default function DashboardClient() {
           
           {/* Charts Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Calorie Balance Chart */}
-            <CalorieBalanceChart data={prepareCalorieData()} />
+            {/* Calorie Balance Chart - Using REAL weekly data */}
+            {weeklyCalorieData.length > 0 ? (
+              <CalorieBalanceChart 
+                data={weeklyCalorieData.map(d => ({
+                  date: d.date,
+                  displayDate: new Date(d.date).toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' }),
+                  intake: d.intake,
+                  target: tdee || 2000,
+                  balance: (tdee || 2000) - d.intake - (d.exerciseBurn || 0)
+                }))} 
+              />
+            ) : (
+              <EmptyState type="no-calorie-data" />
+            )}
             
             {/* Goal Progress Ring */}
-            {targetWeight && startWeight && currentWeight && (
+            {targetWeight && startWeight && currentWeight ? (
               <GoalProgressRing 
                 currentWeight={currentWeight}
                 startWeight={startWeight}
                 targetWeight={targetWeight}
               />
-            )}
-            
-            {/* No Goal Set */}
-            {!targetWeight && (
+            ) : (
               <EmptyState type="no-goal" />
             )}
           </div>
@@ -327,48 +396,44 @@ export default function DashboardClient() {
                   {metrics.slice(0, 5).map((metric, index) => (
                     <div key={metric.id} className="flex justify-between items-center py-2 border-b border-gray-100 last:border-0">
                       <div>
-                        <p className="font-medium">{metric.weight.toFixed(1)} kg</p>
-                        <p className="text-xs text-gray-500">
-                          {new Date(metric.created_at).toLocaleDateString('zh-CN')}
-                        </p>
+                        <span className="text-sm text-gray-500">
+                          {formatDate(metric.created_at)}
+                        </span>
+                        <span className="ml-3 font-medium text-gray-800">
+                          {metric.weight} kg
+                        </span>
                       </div>
-                      {index > 0 && metrics[index - 1] && (
-                        <div className="flex items-center gap-1">
-                          {metric.weight < metrics[index - 1].weight ? (
-                            <span className="text-green-500 text-sm">
-                              ↓ {(metrics[index - 1].weight - metric.weight).toFixed(1)} kg
-                            </span>
-                          ) : metric.weight > metrics[index - 1].weight ? (
-                            <span className="text-red-500 text-sm">
-                              ↑ {(metric.weight - metrics[index - 1].weight).toFixed(1)} kg
-                            </span>
-                          ) : (
-                            <span className="text-gray-400 text-sm">-</span>
-                          )}
-                        </div>
-                      )}
+                      <div className="flex items-center gap-2">
+                        {metric.bmi && (
+                          <span className="text-xs bg-teal-100 text-teal-700 px-2 py-1 rounded">
+                            BMI {metric.bmi.toFixed(1)}
+                          </span>
+                        )}
+                        {index > 0 && metrics[index - 1] && (
+                          <span className={`text-xs font-medium ${
+                            metric.weight < metrics[index - 1].weight 
+                              ? 'text-green-600' 
+                              : metric.weight > metrics[index - 1].weight 
+                                ? 'text-orange-500' 
+                                : 'text-gray-400'
+                          }`}>
+                            {metric.weight < metrics[index - 1].weight ? '↓' : metric.weight > metrics[index - 1].weight ? '↑' : '='}
+                            {Math.abs(metric.weight - metrics[index - 1].weight).toFixed(1)}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
+                <Link href="/metrics">
+                  <Button variant="outline" className="w-full mt-4">
+                    {t('dashboard.viewAll')}
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
           )}
-          
-          {/* Guidance to next step */}
-          <Card className="bg-teal-50 border-teal-200">
-            <CardContent className="p-4">
-              <div className="flex justify-between items-center">
-                <div>
-                  <p className="font-medium text-teal-700">
-                    {t('guidance.toDashboard')}
-                  </p>
-                </div>
-                <Link href="/metrics">
-                  <ArrowRight className="w-5 h-5 text-teal-500" />
-                </Link>
-              </div>
-            </CardContent>
-          </Card>
         </div>
       )}
     </div>

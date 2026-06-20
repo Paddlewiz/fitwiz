@@ -410,7 +410,10 @@
     "recordFirstWeight": "记录第一次体重 →",
     "noCalorieDesc": "还没有热量记录，开始记录你的饮食数据",
     "noGoalDesc": "还没有设置减脂目标",
-    "setGoal": "设置目标"
+    "setGoal": "设置目标",
+    "noCalorieDataTitle": "暂无饮食记录",
+    "noCalorieDataDesc": "去记录今日饮食，追踪热量摄入",
+    "goRecordDiet": "去记录今日饮食"
   },
   "dashboard": {
     "welcome": "欢迎回来",
