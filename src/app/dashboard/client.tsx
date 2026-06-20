@@ -10,6 +10,7 @@ import { WeightTrendChart } from '@/components/charts/weight-trend-chart';
 import { CalorieBalanceChart } from '@/components/charts/calorie-balance-chart';
 import { GoalProgressRing } from '@/components/charts/goal-progress-ring';
 import { EmptyState } from '@/components/dashboard/empty-state';
+import { GamifiedHealthPanel } from '@/components/gamified';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Plus, Scale, Calculator, BarChart3, ArrowRight, RefreshCw } from 'lucide-react';
@@ -263,6 +264,19 @@ export default function DashboardClient() {
           bmi={currentBMI}
           todayCalories={prepareCalorieData()[6]?.intake}
           targetCalories={profileData.recommended_calories || onboardingData.recommendedCalories}
+        />
+      </div>
+      
+      {/* Gamified Health Panel - FIFA Style */}
+      <div className="px-4 mb-6">
+        <GamifiedHealthPanel
+          tdee={2000}
+          todayIntake={prepareCalorieData()[6]?.intake || 0}
+          todayProtein={0}
+          todayExercise={0}
+          proteinTarget={60}
+          energyDeficitTarget={300}
+          exerciseTarget={300}
         />
       </div>
       
