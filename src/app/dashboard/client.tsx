@@ -4,17 +4,43 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useI18n } from '@/lib/i18n-context';
 import { useOnboarding } from '@/lib/onboarding-context';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { getSupabaseBrowserClient } from '@/lib/supabase-browser';
-import { StatsCards } from '@/components/dashboard/stats-cards';
-import { WeightTrendChart } from '@/components/charts/weight-trend-chart';
-import { CalorieBalanceChart } from '@/components/charts/calorie-balance-chart';
-import { GoalProgressRing } from '@/components/charts/goal-progress-ring';
-import { EmptyState } from '@/components/dashboard/empty-state';
-import { GamifiedHealthPanel } from '@/components/gamified';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Plus, Scale, Calculator, BarChart3, ArrowRight, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
+
+// Dynamically import ALL components to avoid SSR issues
+const GamifiedHealthPanel = dynamic(
+  () => import('@/components/gamified/gamified-health-panel').then(mod => mod.GamifiedHealthPanel),
+  { ssr: false, loading: () => <div className="h-[300px] bg-gray-100 rounded-2xl animate-pulse" /> }
+);
+
+const StatsCards = dynamic(
+  () => import('@/components/dashboard/stats-cards').then(mod => mod.StatsCards),
+  { ssr: false, loading: () => <div className="h-[100px] bg-gray-100 rounded-xl animate-pulse" /> }
+);
+
+const EmptyState = dynamic(
+  () => import('@/components/dashboard/empty-state').then(mod => mod.EmptyState),
+  { ssr: false, loading: () => <div className="h-[100px] bg-gray-100 rounded-xl animate-pulse" /> }
+);
+
+const WeightTrendChart = dynamic(
+  () => import('@/components/charts/weight-trend-chart').then(mod => mod.WeightTrendChart),
+  { ssr: false, loading: () => <div className="h-[200px] bg-gray-100 rounded-xl animate-pulse" /> }
+);
+
+const CalorieBalanceChart = dynamic(
+  () => import('@/components/charts/calorie-balance-chart').then(mod => mod.CalorieBalanceChart),
+  { ssr: false, loading: () => <div className="h-[200px] bg-gray-100 rounded-xl animate-pulse" /> }
+);
+
+const GoalProgressRing = dynamic(
+  () => import('@/components/charts/goal-progress-ring').then(mod => mod.GoalProgressRing),
+  { ssr: false, loading: () => <div className="h-[180px] bg-gray-100 rounded-xl animate-pulse" /> }
+);
 
 interface BodyMetric {
   id: string;
