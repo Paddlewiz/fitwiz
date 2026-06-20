@@ -2,43 +2,46 @@ import type { Metadata } from 'next';
 import { Inspector } from 'react-dev-inspector';
 import './globals.css';
 import { SupabaseConfigProvider } from '@/lib/supabase-config-inject';
+import { I18nProvider } from '@/lib/i18n-context';
 
 export const metadata: Metadata = {
   title: {
-    default: 'FitWiz - Free Health & Weight Loss Tracker',
+    default: 'FitWiz - 免费健康管理追踪',
     template: '%s | FitWiz',
   },
   description:
-    'FitWiz is a free web-based health and weight loss tracking app. Calculate your TDEE, BMI, track body metrics, and achieve your fitness goals with our easy-to-use tools.',
+    'FitWiz是一款免费的健康管理追踪应用。计算TDEE、BMI，追踪身体数据，达成您的健康目标。',
   keywords: [
     'FitWiz',
-    'health tracker',
-    'weight loss',
-    'TDEE calculator',
-    'BMI calculator',
-    'body metrics',
-    'fitness tracking',
-    'calorie tracking',
-    'weight tracking',
-    'health app',
-    'free fitness tools',
+    '健康管理',
+    '体重追踪',
+    'TDEE计算器',
+    'BMI计算器',
+    '体脂率',
+    '健身追踪',
+    '热量追踪',
+    '体重管理',
+    '健康应用',
+    '免费健身工具',
+    '基础代谢率',
+    '体质指数',
   ],
   authors: [{ name: 'FitWiz Team' }],
   generator: 'FitWiz',
   openGraph: {
-    title: 'FitWiz - Free Health & Weight Loss Tracker',
+    title: 'FitWiz - 免费健康管理追踪',
     description:
-      'Track your health journey with FitWiz. Free TDEE & BMI calculators, body metrics tracking, and personalized insights to help you achieve your fitness goals.',
+      '使用FitWiz追踪您的健康旅程。免费TDEE和BMI计算器，身体数据追踪，个性化建议助您达成健身目标。',
     url: 'https://fitwiz.co',
     siteName: 'FitWiz',
-    locale: 'en_US',
+    locale: 'zh_CN',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'FitWiz - Free Health & Weight Loss Tracker',
+    title: 'FitWiz - 免费健康管理追踪',
     description:
-      'Track your health journey with FitWiz. Free TDEE & BMI calculators, body metrics tracking, and personalized insights.',
+      '使用FitWiz追踪您的健康旅程。免费TDEE和BMI计算器，身体数据追踪，个性化建议。',
   },
   robots: {
     index: true,
@@ -54,12 +57,14 @@ export default function RootLayout({
   const isDev = process.env.COZE_PROJECT_ENV === 'DEV';
 
   return (
-    <html lang="en">
+    <html lang="zh-CN">
       <body className={`antialiased bg-gray-50`}>
         {isDev && <Inspector />}
-        <SupabaseConfigProvider>
-          {children}
-        </SupabaseConfigProvider>
+        <I18nProvider>
+          <SupabaseConfigProvider>
+            {children}
+          </SupabaseConfigProvider>
+        </I18nProvider>
       </body>
     </html>
   );

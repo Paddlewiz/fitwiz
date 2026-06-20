@@ -1,27 +1,32 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calculator } from 'lucide-react';
+import { Calculator, AlertCircle, CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
+import { useI18n } from '@/lib/i18n-context';
 
 interface BMIResult {
   bmi: number;
   category: string;
+  categoryKey: string;
   color: string;
-  position: number; // percentage position on scale (0-100)
+  position: number;
+  idealWeightMin: number;
+  idealWeightMax: number;
 }
 
 const bmiRanges = [
-  { min: 0, max: 18.5, label: 'Underweight', color: '#3B82F6' }, // blue
-  { min: 18.5, max: 25, label: 'Normal', color: '#22C55E' }, // green
-  { min: 25, max: 30, label: 'Overweight', color: '#F59E0B' }, // amber
-  { min: 30, max: 40, label: 'Obese', color: '#EF4444' }, // red
+  { min: 0, max: 18.5, labelKey: 'bmi.categories.underweight', color: '#3B82F6' },
+  { min: 18.5, max: 25, labelKey: 'bmi.categories.normal', color: '#22C55E' },
+  { min: 25, max: 30, labelKey: 'bmi.categories.overweight', color: '#F59E0B' },
+  { min: 30, max: 40, labelKey: 'bmi.categories.obese', color: '#EF4444' },
 ];
 
 export function BMICalculatorClient() {
+  const { t } = useI18n();
   const [weight, setWeight] = useState<string>('70');
   const [height, setHeight] = useState<string>('175');
   const [unitSystem, setUnitSystem] = useState<'metric' | 'imperial'>('metric');
@@ -30,16 +35,24 @@ export function BMICalculatorClient() {
   const convertToKg = (lbs: number): number => lbs * 0.453592;
   const convertToMeters = (inches: number): number => inches * 0.0254;
 
-  const getBMICategory = (bmi: number): { category: string; color: string } => {
-    if (bmi < 18.5) return { category: 'Underweight', color: '#3B82F6' };
-    if (bmi < 25) return { category: 'Normal Weight', color: '#22C55E' };
-    if (bmi < 30) return { category: 'Overweight', color: '#F59E0B' };
-    return { category: 'Obese', color: '#EF4444' };
+  const getBMICategory = (bmi: number): { category: string; categoryKey: string; color: string } => {
+    if (bmi < 18.5) return { category: t('bmi.categories.underweight'), categoryKey: 'underweight', color: '#3B82F6' };
+    if (bmi < 25) return { category: t('bmi.categories.normal'), categoryKey: 'normal', color: '#22C55E' };
+    if (bmi < 30) return { category: t('bmi.categories.overweight'), categoryKey: 'overweight', color: '#F59E0B' };
+    return { category: t('bmi.categories.obese'), categoryKey: 'obese', color: '#EF4444' };
+  };
+
+  const getCategoryIcon = (categoryKey: string) => {
+    switch (categoryKey) {
+      case 'underweight': return <AlertCircle className="w-5 h-5" />;
+      case 'normal': return <CheckCircle className="w-5 h-5" />;
+      case 'overweight': return <AlertTriangle className="w-5 h-5" />;
+      case 'obese': return <XCircle className="w-5 h-5" />;
+      default: return null;
+    }
   };
 
   const calculatePosition = (bmi: number): number => {
-    // Scale from BMI 15 to 40 (25 range)
-    // Position = ((bmi - 15) / 25) * 100, clamped to 0-100
     const position = Math.max(0, Math.min(100, ((bmi - 15) / 25) * 100));
     return position;
   };
@@ -52,18 +65,25 @@ export function BMICalculatorClient() {
       weightKg = convertToKg(weightKg);
       heightM = convertToMeters(heightM);
     } else {
-      heightM = heightM / 100; // convert cm to meters
+      heightM = heightM / 100;
     }
 
     const bmi = weightKg / (heightM * heightM);
-    const { category, color } = getBMICategory(bmi);
+    const { category, categoryKey, color } = getBMICategory(bmi);
     const position = calculatePosition(bmi);
+
+    // Calculate ideal weight range (BMI 18.5-24.9)
+    const idealWeightMin = Math.round(18.5 * heightM * heightM);
+    const idealWeightMax = Math.round(24.9 * heightM * heightM);
 
     setResult({
       bmi: Math.round(bmi * 10) / 10,
       category,
+      categoryKey,
       color,
       position,
+      idealWeightMin,
+      idealWeightMax,
     });
   };
 
@@ -73,19 +93,24 @@ export function BMICalculatorClient() {
         <CardHeader className="bg-gradient-to-r from-teal-500 to-teal-600 text-white rounded-t-lg">
           <CardTitle className="flex items-center gap-2">
             <Calculator className="w-5 h-5" />
-            Calculate Your BMI
+            {t('bmi.subtitle')}
           </CardTitle>
         </CardHeader>
         <CardContent className="p-6 space-y-6">
+          {/* Formula Note */}
+          <p className="text-sm text-gray-500 text-center">
+            {t('bmi.formulaNote')}
+          </p>
+
           {/* Unit System Toggle */}
-          <div className="flex gap-4">
+          <div className="flex gap-4 justify-center">
             <Button
               variant={unitSystem === 'metric' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setUnitSystem('metric')}
               className={unitSystem === 'metric' ? 'bg-teal-500 hover:bg-teal-600' : ''}
             >
-              Metric (kg/cm)
+              {t('common.kg')}/{t('common.cm')}
             </Button>
             <Button
               variant={unitSystem === 'imperial' ? 'default' : 'outline'}
@@ -93,21 +118,21 @@ export function BMICalculatorClient() {
               onClick={() => setUnitSystem('imperial')}
               className={unitSystem === 'imperial' ? 'bg-teal-500 hover:bg-teal-600' : ''}
             >
-              Imperial (lb/in)
+              lb/in
             </Button>
           </div>
 
           {/* Weight */}
           <div className="space-y-2">
             <Label htmlFor="weight">
-              Weight ({unitSystem === 'metric' ? 'kg' : 'lbs'})
+              {t('bmi.weight')} ({unitSystem === 'metric' ? t('common.kg') : 'lbs'})
             </Label>
             <Input
               id="weight"
               type="number"
               value={weight}
               onChange={(e) => setWeight(e.target.value)}
-              placeholder={unitSystem === 'metric' ? '70' : '150'}
+              placeholder={t('bmi.weightPlaceholder')}
               min="1"
               step="0.1"
             />
@@ -116,14 +141,14 @@ export function BMICalculatorClient() {
           {/* Height */}
           <div className="space-y-2">
             <Label htmlFor="height">
-              Height ({unitSystem === 'metric' ? 'cm' : 'inches'})
+              {t('bmi.height')} ({unitSystem === 'metric' ? t('common.cm') : 'inches'})
             </Label>
             <Input
               id="height"
               type="number"
               value={height}
               onChange={(e) => setHeight(e.target.value)}
-              placeholder={unitSystem === 'metric' ? '175' : '70'}
+              placeholder={t('bmi.heightPlaceholder')}
               min="1"
             />
           </div>
@@ -133,7 +158,7 @@ export function BMICalculatorClient() {
             onClick={calculateBMI}
             className="w-full bg-teal-500 hover:bg-teal-600 text-white font-semibold py-3"
           >
-            Calculate BMI
+            {t('bmi.calculate')}
           </Button>
 
           {/* Results */}
@@ -141,17 +166,21 @@ export function BMICalculatorClient() {
             <div className="mt-6 space-y-4 bg-gray-50 rounded-lg p-6">
               {/* BMI Value */}
               <div className="text-center">
-                <p className="text-sm text-gray-600 mb-1">Your BMI</p>
+                <p className="text-sm text-gray-600 mb-1">{t('bmi.yourBMI')}</p>
                 <p className="text-4xl font-bold" style={{ color: result.color }}>
                   {result.bmi}
                 </p>
-                <p className="text-lg font-semibold mt-2" style={{ color: result.color }}>
-                  {result.category}
-                </p>
+                <div className="flex items-center justify-center gap-2 mt-2">
+                  {getCategoryIcon(result.categoryKey)}
+                  <p className="text-lg font-semibold" style={{ color: result.color }}>
+                    {result.category}
+                  </p>
+                </div>
               </div>
 
               {/* Visual Scale */}
               <div className="relative mt-6">
+                <p className="text-xs text-gray-500 mb-2 text-center">{t('bmi.bmiScale')}</p>
                 {/* Scale Bar */}
                 <div className="h-8 rounded-full overflow-hidden flex">
                   {bmiRanges.map((range, index) => (
@@ -163,7 +192,7 @@ export function BMICalculatorClient() {
                         width: `${((range.max - range.min) / 25) * 100}%`,
                       }}
                     >
-                      {range.label}
+                      {t(range.labelKey)}
                     </div>
                   ))}
                 </div>
@@ -189,16 +218,43 @@ export function BMICalculatorClient() {
 
               {/* Health Advice */}
               <div className="mt-4 p-4 rounded-lg" style={{ backgroundColor: `${result.color}15` }}>
-                <p className="font-medium" style={{ color: result.color }}>
-                  {result.category === 'Underweight' &&
-                    'Consider consulting a healthcare provider about healthy weight gain strategies.'}
-                  {result.category === 'Normal Weight' &&
-                    'Great! You are at a healthy weight. Maintain your current lifestyle.'}
-                  {result.category === 'Overweight' &&
-                    'Consider lifestyle changes like balanced diet and regular exercise to reach a healthy weight.'}
-                  {result.category === 'Obese' &&
-                    'Consult a healthcare provider for personalized advice on weight management.'}
+                <div className="flex items-center gap-2 mb-2">
+                  {getCategoryIcon(result.categoryKey)}
+                  <p className="font-semibold" style={{ color: result.color }}>
+                    {t(`bmi.healthAdvice.${result.categoryKey}Title`)}
+                  </p>
+                </div>
+                <p className="text-sm text-gray-600">
+                  {t(`bmi.healthAdvice.${result.categoryKey}Desc`)}
                 </p>
+              </div>
+
+              {/* Ideal Weight Range */}
+              <div className="bg-teal-50 rounded-lg p-4 text-center">
+                <p className="text-sm text-teal-700 mb-1">{t('bmi.idealWeight')}</p>
+                <p className="text-lg font-bold text-teal-600">
+                  {result.idealWeightMin} - {result.idealWeightMax} {t('common.kg')}
+                </p>
+                <p className="text-xs text-teal-500 mt-1">
+                  {t('bmi.idealWeightDesc')}
+                </p>
+              </div>
+
+              {/* Note */}
+              <div className="bg-amber-50 rounded-lg p-3">
+                <p className="text-xs text-amber-700">
+                  {t('bmi.weightNote')}
+                </p>
+              </div>
+
+              {/* Tips */}
+              <div className="bg-gray-100 rounded-lg p-4 mt-4">
+                <h4 className="text-sm font-semibold text-gray-900 mb-2">{t('bmi.tip1')}</h4>
+                <ul className="text-xs text-gray-600 space-y-1">
+                  <li>• {t('bmi.tip2')}</li>
+                  <li>• {t('bmi.tip3')}</li>
+                  <li>• {t('bmi.tip4')}</li>
+                </ul>
               </div>
             </div>
           )}

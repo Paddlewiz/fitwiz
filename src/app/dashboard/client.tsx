@@ -20,6 +20,7 @@ import {
   Flame,
   Activity,
 } from 'lucide-react';
+import { useTranslation } from '@/lib/i18n-context';
 
 interface UserProfile {
   display_name: string | null;
@@ -37,6 +38,7 @@ interface BodyMetric {
 export function DashboardPageClient() {
   const router = useRouter();
   const { isLoading: configLoading } = useSupabaseConfig();
+  const { t, locale } = useTranslation();
 
   const [user, setUser] = useState<{ id: string; email?: string } | null>(null);
   const [loading, setLoading] = useState(true);
@@ -113,7 +115,7 @@ export function DashboardPageClient() {
     .slice()
     .reverse()
     .map((m) => ({
-      date: new Date(m.recorded_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      date: new Date(m.recorded_at).toLocaleDateString(locale === 'zh-CN' ? 'zh-CN' : 'en-US', { month: 'short', day: 'numeric' }),
       weight: m.weight ? parseFloat(m.weight) : null,
     }));
 
@@ -130,6 +132,15 @@ export function DashboardPageClient() {
 
   const progressData = calculateProgress();
 
+  // Get BMI category
+  const getBMICategory = (bmi: string) => {
+    const bmiValue = parseFloat(bmi);
+    if (bmiValue < 18.5) return t('bmi.underweight');
+    if (bmiValue < 25) return t('bmi.normal');
+    if (bmiValue < 30) return t('bmi.overweight');
+    return t('bmi.obese');
+  };
+
   if (configLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
@@ -144,13 +155,13 @@ export function DashboardPageClient() {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+            <h1 className="text-2xl font-bold text-gray-900">{t('dashboard.title')}</h1>
             <p className="text-gray-600">
-              Welcome back, {profile?.display_name || user?.email?.split('@')[0] || 'User'}!
+              {t('dashboard.welcome')}, {profile?.display_name || user?.email?.split('@')[0] || t('common.user')}!
             </p>
           </div>
           <Button variant="outline" onClick={handleLogout} className="text-gray-600">
-            Logout
+            {t('common.logout')}
           </Button>
         </div>
 
@@ -160,7 +171,7 @@ export function DashboardPageClient() {
             <Card className="shadow-sm hover:shadow-md transition-shadow cursor-pointer bg-teal-50 border-teal-100">
               <CardContent className="p-4 flex items-center gap-3">
                 <Plus className="w-5 h-5 text-teal-600" />
-                <span className="font-medium text-teal-700">Log Weight</span>
+                <span className="font-medium text-teal-700">{t('dashboard.logWeight')}</span>
               </CardContent>
             </Card>
           </Link>
@@ -168,7 +179,7 @@ export function DashboardPageClient() {
             <Card className="shadow-sm hover:shadow-md transition-shadow cursor-pointer bg-blue-50 border-blue-100">
               <CardContent className="p-4 flex items-center gap-3">
                 <Calculator className="w-5 h-5 text-blue-600" />
-                <span className="font-medium text-blue-700">TDEE Calc</span>
+                <span className="font-medium text-blue-700">{t('dashboard.tdeeCalc')}</span>
               </CardContent>
             </Card>
           </Link>
@@ -176,7 +187,7 @@ export function DashboardPageClient() {
             <Card className="shadow-sm hover:shadow-md transition-shadow cursor-pointer bg-green-50 border-green-100">
               <CardContent className="p-4 flex items-center gap-3">
                 <Scale className="w-5 h-5 text-green-600" />
-                <span className="font-medium text-green-700">BMI Calc</span>
+                <span className="font-medium text-green-700">{t('dashboard.bmiCalc')}</span>
               </CardContent>
             </Card>
           </Link>
@@ -184,7 +195,7 @@ export function DashboardPageClient() {
             <Card className="shadow-sm hover:shadow-md transition-shadow cursor-pointer bg-amber-50 border-amber-100">
               <CardContent className="p-4 flex items-center gap-3">
                 <Activity className="w-5 h-5 text-amber-600" />
-                <span className="font-medium text-amber-700">Full Metrics</span>
+                <span className="font-medium text-amber-700">{t('dashboard.fullMetrics')}</span>
               </CardContent>
             </Card>
           </Link>
@@ -196,18 +207,18 @@ export function DashboardPageClient() {
             <CardHeader className="pb-2">
               <CardTitle className="text-sm text-gray-600 flex items-center gap-2">
                 <Scale className="w-4 h-4 text-teal-500" />
-                Current Weight
+                {t('dashboard.currentWeight')}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-3xl font-bold text-teal-600">
-                {latestMetric?.weight ? `${latestMetric.weight} kg` : 'No data'}
+                {latestMetric?.weight ? `${latestMetric.weight} kg` : t('common.noData')}
               </p>
               {metrics.length > 1 && (
                 <p className="text-sm text-gray-500 mt-1">
                   {parseFloat(metrics[0].weight || '0') < parseFloat(metrics[1].weight || '0')
-                    ? '↓ from last entry'
-                    : '↑ from last entry'}
+                    ? t('dashboard.downFromLast')
+                    : t('dashboard.upFromLast')}
                 </p>
               )}
             </CardContent>
@@ -217,22 +228,16 @@ export function DashboardPageClient() {
             <CardHeader className="pb-2">
               <CardTitle className="text-sm text-gray-600 flex items-center gap-2">
                 <Calculator className="w-4 h-4 text-green-500" />
-                Current BMI
+                {t('dashboard.currentBMI')}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-3xl font-bold text-green-600">
-                {latestMetric?.bmi ? latestMetric.bmi : 'No data'}
+                {latestMetric?.bmi ? latestMetric.bmi : t('common.noData')}
               </p>
               {latestMetric?.bmi && (
                 <p className="text-sm text-gray-500 mt-1">
-                  {parseFloat(latestMetric.bmi) < 18.5
-                    ? 'Underweight'
-                    : parseFloat(latestMetric.bmi) < 25
-                      ? 'Normal'
-                      : parseFloat(latestMetric.bmi) < 30
-                        ? 'Overweight'
-                        : 'Obese'}
+                  {getBMICategory(latestMetric.bmi)}
                 </p>
               )}
             </CardContent>
@@ -242,12 +247,12 @@ export function DashboardPageClient() {
             <CardHeader className="pb-2">
               <CardTitle className="text-sm text-gray-600 flex items-center gap-2">
                 <Flame className="w-4 h-4 text-amber-500" />
-                Calorie Balance
+                {t('dashboard.calorieBalance')}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-3xl font-bold text-amber-600">--</p>
-              <p className="text-sm text-gray-500 mt-1">Start tracking to see</p>
+              <p className="text-sm text-gray-500 mt-1">{t('dashboard.startTracking')}</p>
             </CardContent>
           </Card>
         </div>
@@ -258,19 +263,19 @@ export function DashboardPageClient() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Target className="w-5 h-5 text-teal-500" />
-                Progress to Target
+                {t('dashboard.progressToTarget')}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex justify-between text-sm">
-                <span>Current: {progressData.current} kg</span>
-                <span>Target: {progressData.target} kg</span>
+                <span>{t('dashboard.current')}: {progressData.current} kg</span>
+                <span>{t('dashboard.target')}: {progressData.target} kg</span>
               </div>
               <Progress value={progressData.progress} className="h-4" />
               <p className="text-center text-gray-600">
                 {progressData.progress < 100
-                  ? `${Math.round(progressData.progress)}% complete`
-                  : 'Goal achieved! 🎉'}
+                  ? `${Math.round(progressData.progress)}% ${t('dashboard.complete')}`
+                  : t('dashboard.goalAchieved')}
               </p>
             </CardContent>
           </Card>
@@ -281,17 +286,17 @@ export function DashboardPageClient() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrendingDown className="w-5 h-5 text-teal-500" />
-              30-Day Weight Trend
+              {t('dashboard.weightTrend')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             {metrics.length === 0 ? (
               <div className="text-center py-8 text-gray-600">
                 <TrendingDown className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                <p>No weight data yet.</p>
+                <p>{t('dashboard.noWeightData')}</p>
                 <Link href="/metrics">
                   <Button className="mt-4 bg-teal-500 hover:bg-teal-600">
-                    Start Tracking
+                    {t('dashboard.startTracking')}
                     <ArrowRight className="w-4 h-4 ml-2" />
                   </Button>
                 </Link>
@@ -332,13 +337,13 @@ export function DashboardPageClient() {
           <Card className="shadow-md bg-teal-50 border-teal-100">
             <CardContent className="p-6 text-center">
               <Target className="w-8 h-8 mx-auto mb-4 text-teal-600" />
-              <p className="text-teal-700 font-medium mb-2">Set Your Weight Goal</p>
+              <p className="text-teal-700 font-medium mb-2">{t('dashboard.setWeightGoal')}</p>
               <p className="text-teal-600 text-sm mb-4">
-                Define your target weight to see progress tracking on your dashboard.
+                {t('dashboard.defineTargetDesc')}
               </p>
               <Link href="/metrics">
                 <Button className="bg-teal-500 hover:bg-teal-600">
-                  Set Goal
+                  {t('dashboard.setGoal')}
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </Link>

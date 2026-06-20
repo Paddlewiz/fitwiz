@@ -3,8 +3,9 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Menu, X, User, LogOut } from 'lucide-react';
+import { Menu, X, User, LogOut, Globe } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useI18n } from '@/lib/i18n-context';
 
 interface HeaderProps {
   isLoggedIn?: boolean;
@@ -14,19 +15,20 @@ interface HeaderProps {
 
 export function Header({ isLoggedIn = false, userName, onLogout }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { t, language, toggleLanguage } = useI18n();
 
   const navLinks = [
-    { href: '/', label: 'Home' },
-    { href: '/calculators/tdee', label: 'TDEE Calculator' },
-    { href: '/calculators/bmi', label: 'BMI Calculator' },
+    { href: '/', label: t('nav.home') },
+    { href: '/calculators/tdee', label: t('nav.tdeeCalculator') },
+    { href: '/calculators/bmi', label: t('nav.bmiCalculator') },
   ];
 
   const authLinks = isLoggedIn
     ? [
-        { href: '/dashboard', label: 'Dashboard' },
-        { href: '/metrics', label: 'Body Metrics' },
+        { href: '/dashboard', label: t('nav.dashboard') },
+        { href: '/metrics', label: t('nav.metrics') },
       ]
-    : [{ href: '/login', label: 'Login' }];
+    : [{ href: '/login', label: t('nav.login') }];
 
   return (
     <header className="sticky top-0 z-50 w-full bg-white border-b border-gray-100 shadow-sm">
@@ -61,8 +63,18 @@ export function Header({ isLoggedIn = false, userName, onLogout }: HeaderProps) 
           ))}
         </div>
 
-        {/* User Menu or Login Button */}
-        <div className="hidden md:flex items-center gap-4">
+        {/* Right Section: Language Switch + User Menu */}
+        <div className="hidden md:flex items-center gap-3">
+          {/* Language Switch Button */}
+          <button
+            onClick={toggleLanguage}
+            className="flex items-center gap-1 px-3 py-1.5 rounded-md bg-gray-100 hover:bg-gray-200 transition-colors text-sm font-medium"
+            title={t('lang.switch')}
+          >
+            <Globe className="w-4 h-4 text-gray-600" />
+            <span className="text-gray-700">{language === 'zh-CN' ? '中文' : 'EN'}</span>
+          </button>
+
           {isLoggedIn ? (
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2 text-gray-600">
@@ -76,13 +88,13 @@ export function Header({ isLoggedIn = false, userName, onLogout }: HeaderProps) 
                 className="text-gray-600 hover:text-red-600"
               >
                 <LogOut className="w-4 h-4 mr-1" />
-                Logout
+                {t('nav.logout')}
               </Button>
             </div>
           ) : (
             <Link href="/login">
               <Button className="bg-teal-500 hover:bg-teal-600 text-white">
-                Sign Up Free
+                {t('login.createAccount')}
               </Button>
             </Link>
           )}
@@ -105,6 +117,15 @@ export function Header({ isLoggedIn = false, userName, onLogout }: HeaderProps) 
         )}
       >
         <div className="container mx-auto px-4 py-4 space-y-3">
+          {/* Language Switch in Mobile */}
+          <button
+            onClick={toggleLanguage}
+            className="flex items-center gap-2 py-2 text-gray-600 hover:text-teal-600 transition-colors font-medium w-full"
+          >
+            <Globe className="w-4 h-4" />
+            <span>{t('lang.switch')}: {language === 'zh-CN' ? '中文' : 'EN'}</span>
+          </button>
+
           {navLinks.map((link) => (
             <Link
               key={link.href}
@@ -134,7 +155,7 @@ export function Header({ isLoggedIn = false, userName, onLogout }: HeaderProps) 
               className="block py-2 text-red-600 font-medium w-full text-left"
             >
               <LogOut className="w-4 h-4 inline mr-2" />
-              Logout
+              {t('nav.logout')}
             </button>
           )}
         </div>

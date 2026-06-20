@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import { LoginPageClient } from './client';
 
 export const metadata: Metadata = {
-  title: 'Login - FitWiz',
-  description: 'Sign in to FitWiz to track your health journey, body metrics, and achieve your fitness goals.',
+  title: '登录 - FitWiz',
+  description: '登录 FitWiz，开启您的健康之旅，追踪身体指标，实现健身目标。',
   robots: {
     index: false,
     follow: true,

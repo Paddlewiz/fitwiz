@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -12,11 +12,13 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useSupabaseConfig } from '@/lib/supabase-config-inject';
 import { getSupabaseBrowserClientWithRetry } from '@/lib/supabase-browser';
+import { useI18n } from '@/lib/i18n-context';
 import { Eye, EyeOff, Mail, Lock, AlertCircle, Loader2 } from 'lucide-react';
 
 export function LoginPageClient() {
   const router = useRouter();
   const { isLoading: configLoading, error: configError } = useSupabaseConfig();
+  const { t } = useI18n();
 
   // App config from auth
   const appName = 'FitWiz';
@@ -53,7 +55,7 @@ export function LoginPageClient() {
 
       if (error) {
         if (error.message.includes('Invalid login credentials')) {
-          setError('Email or password is incorrect. Please try again.');
+          setError(t('login.error.loginFailed'));
         } else {
           setError(error.message);
         }
@@ -64,7 +66,7 @@ export function LoginPageClient() {
         router.push('/dashboard');
       }
     } catch (err) {
-      setError('An unexpected error occurred. Please try again.');
+      setError(t('login.error.loginFailed'));
       console.error(err);
     } finally {
       setLoading(false);
@@ -77,12 +79,12 @@ export function LoginPageClient() {
     setRegisterError(null);
 
     if (registerPassword !== registerConfirmPassword) {
-      setRegisterError('Passwords do not match.');
+      setRegisterError(t('login.error.passwordMismatch'));
       return;
     }
 
     if (registerPassword.length < 6) {
-      setRegisterError('Password must be at least 6 characters.');
+      setRegisterError(t('login.error.shortPassword'));
       return;
     }
 
@@ -110,7 +112,7 @@ export function LoginPageClient() {
         router.push('/dashboard');
       }
     } catch (err) {
-      setRegisterError('An unexpected error occurred. Please try again.');
+      setRegisterError(t('login.error.signupFailed'));
       console.error(err);
     } finally {
       setRegisterLoading(false);
@@ -137,7 +139,7 @@ export function LoginPageClient() {
       }
       // OAuth redirects automatically, no need to handle success here
     } catch (err) {
-      setError('Failed to initiate Google login. Please try again.');
+      setError(t('login.error.googleFailed'));
       console.error(err);
       setLoading(false);
     }
@@ -157,7 +159,7 @@ export function LoginPageClient() {
         <Alert variant="destructive" className="max-w-md">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            Failed to load authentication configuration. Please refresh the page.
+            {t('common.error')}
           </AlertDescription>
         </Alert>
       </div>
@@ -181,7 +183,7 @@ export function LoginPageClient() {
           </div>
           {/* App Name */}
           <CardTitle className="text-2xl font-bold text-gray-900">{appName}</CardTitle>
-          <p className="text-gray-600 mt-1">Your Health Tracking Companion</p>
+          <p className="text-gray-600 mt-1">{t('footer.tagline')}</p>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Google OAuth Button */}
@@ -210,7 +212,7 @@ export function LoginPageClient() {
                 d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.58 2.18 7.23l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
               />
             </svg>
-            Continue with Google
+            {t('login.signInWithGoogle')}
           </Button>
 
           {/* Divider */}
@@ -219,7 +221,7 @@ export function LoginPageClient() {
               <span className="w-full border-t border-gray-200" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-white px-2 text-gray-500">or</span>
+              <span className="bg-white px-2 text-gray-500">{t('login.orContinueWith')}</span>
             </div>
           </div>
 
@@ -227,10 +229,10 @@ export function LoginPageClient() {
           <Tabs defaultValue="login" className="w-full">
             <TabsList className="grid w-full grid-cols-2 bg-gray-100">
               <TabsTrigger value="login" className="data-[state=active]:bg-white data-[state=active]:text-teal-600">
-                Login
+                {t('login.signIn')}
               </TabsTrigger>
               <TabsTrigger value="register" className="data-[state=active]:bg-white data-[state=active]:text-teal-600">
-                Register
+                {t('login.signUp')}
               </TabsTrigger>
             </TabsList>
 
@@ -245,13 +247,13 @@ export function LoginPageClient() {
                 )}
 
                 <div className="space-y-2">
-                  <Label htmlFor="login-email">Email</Label>
+                  <Label htmlFor="login-email">{t('login.email')}</Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                     <Input
                       id="login-email"
                       type="email"
-                      placeholder="you@example.com"
+                      placeholder={t('login.emailPlaceholder')}
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       className="pl-10"
@@ -261,13 +263,13 @@ export function LoginPageClient() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="login-password">Password</Label>
+                  <Label htmlFor="login-password">{t('login.password')}</Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                     <Input
                       id="login-password"
                       type={showPassword ? 'text' : 'password'}
-                      placeholder="Enter your password"
+                      placeholder={t('login.passwordPlaceholder')}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       className="pl-10 pr-10"
@@ -291,10 +293,10 @@ export function LoginPageClient() {
                   {loading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Signing in...
+                      {t('common.loading')}
                     </>
                   ) : (
-                    'Sign In'
+                    t('login.signInBtn')
                   )}
                 </Button>
               </form>
@@ -311,13 +313,13 @@ export function LoginPageClient() {
                 )}
 
                 <div className="space-y-2">
-                  <Label htmlFor="register-email">Email</Label>
+                  <Label htmlFor="register-email">{t('login.email')}</Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                     <Input
                       id="register-email"
                       type="email"
-                      placeholder="you@example.com"
+                      placeholder={t('login.emailPlaceholder')}
                       value={registerEmail}
                       onChange={(e) => setRegisterEmail(e.target.value)}
                       className="pl-10"
@@ -327,13 +329,13 @@ export function LoginPageClient() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="register-password">Password (min 6 characters)</Label>
+                  <Label htmlFor="register-password">{t('login.password')} ({t('login.error.shortPassword')})</Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                     <Input
                       id="register-password"
                       type={showRegisterPassword ? 'text' : 'password'}
-                      placeholder="Create a password"
+                      placeholder={t('login.passwordPlaceholder')}
                       value={registerPassword}
                       onChange={(e) => setRegisterPassword(e.target.value)}
                       className="pl-10 pr-10"
@@ -350,13 +352,13 @@ export function LoginPageClient() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="register-confirm-password">Confirm Password</Label>
+                  <Label htmlFor="register-confirm-password">{t('login.confirmPassword')}</Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                     <Input
                       id="register-confirm-password"
                       type={showRegisterConfirmPassword ? 'text' : 'password'}
-                      placeholder="Confirm your password"
+                      placeholder={t('login.confirmPasswordPlaceholder')}
                       value={registerConfirmPassword}
                       onChange={(e) => setRegisterConfirmPassword(e.target.value)}
                       className="pl-10 pr-10"
@@ -380,10 +382,10 @@ export function LoginPageClient() {
                   {registerLoading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Creating account...
+                      {t('common.loading')}
                     </>
                   ) : (
-                    'Create Account'
+                    t('login.signUpBtn')
                   )}
                 </Button>
               </form>
@@ -393,7 +395,7 @@ export function LoginPageClient() {
           {/* Back to home */}
           <div className="text-center pt-4">
             <Link href="/" className="text-sm text-gray-600 hover:text-teal-600">
-              Back to Home
+              {t('common.back')} {t('nav.home')}
             </Link>
           </div>
         </CardContent>

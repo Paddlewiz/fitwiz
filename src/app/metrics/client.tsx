@@ -11,6 +11,7 @@ import { useSupabaseConfig } from '@/lib/supabase-config-inject';
 import { getSupabaseBrowserClientWithRetry } from '@/lib/supabase-browser';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Scale, Plus, Trash2, Loader2, AlertCircle, TrendingDown, TrendingUp } from 'lucide-react';
+import { useTranslation } from '@/lib/i18n-context';
 
 interface BodyMetric {
   id: string;
@@ -29,6 +30,7 @@ interface BodyMetric {
 export function MetricsPageClient() {
   const router = useRouter();
   const { isLoading: configLoading } = useSupabaseConfig();
+  const { t, locale } = useTranslation();
 
   const [user, setUser] = useState<{ id: string } | null>(null);
   const [loading, setLoading] = useState(true);
@@ -73,7 +75,7 @@ export function MetricsPageClient() {
         setMetrics(data || []);
       } catch (err) {
         console.error(err);
-        setError('Failed to load data');
+        setError(t('metrics.loadError'));
       } finally {
         setLoading(false);
       }
@@ -82,7 +84,7 @@ export function MetricsPageClient() {
     if (!configLoading) {
       init();
     }
-  }, [configLoading, router]);
+  }, [configLoading, router, t]);
 
   // Calculate BMI from weight
   const calculateBMI = async () => {
@@ -112,7 +114,7 @@ export function MetricsPageClient() {
   // Save new metric
   const handleSave = async () => {
     if (!weight || !user) {
-      setError('Weight is required');
+      setError(t('metrics.weightRequired'));
       return;
     }
 
@@ -157,7 +159,7 @@ export function MetricsPageClient() {
       setWaterPct('');
       setNotes('');
     } catch (err) {
-      setError('Failed to save metric');
+      setError(t('metrics.saveError'));
       console.error(err);
     } finally {
       setSaving(false);
@@ -179,7 +181,7 @@ export function MetricsPageClient() {
       if (error) throw error;
       setMetrics(metrics.filter((m) => m.id !== id));
     } catch (err) {
-      setError('Failed to delete metric');
+      setError(t('metrics.deleteError'));
       console.error(err);
     }
   };
@@ -189,7 +191,7 @@ export function MetricsPageClient() {
     .slice()
     .reverse()
     .map((m) => ({
-      date: new Date(m.recorded_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      date: new Date(m.recorded_at).toLocaleDateString(locale === 'zh-CN' ? 'zh-CN' : 'en-US', { month: 'short', day: 'numeric' }),
       weight: m.weight ? parseFloat(m.weight) : null,
       bmi: m.bmi ? parseFloat(m.bmi) : null,
     }));
@@ -210,13 +212,12 @@ export function MetricsPageClient() {
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Body Metrics</h1>
+          <h1 className="text-2xl font-bold text-gray-900">{t('metrics.title')}</h1>
           <Button
             onClick={() => setShowForm(!showForm)}
             className="bg-teal-500 hover:bg-teal-600"
           >
-            {showForm ? 'Cancel' : <Plus className="w-4 h-4 mr-2" />}
-            {showForm ? '' : 'Add Entry'}
+            {showForm ? t('common.cancel') : <><Plus className="w-4 h-4 mr-2" />{t('metrics.addEntry')}</>}
           </Button>
         </div>
 
@@ -233,13 +234,13 @@ export function MetricsPageClient() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Scale className="w-5 h-5 text-teal-500" />
-                Add Body Metric
+                {t('metrics.addMetric')}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="weight">Weight (kg) *</Label>
+                  <Label htmlFor="weight">{t('metrics.weight')} *</Label>
                   <Input
                     id="weight"
                     type="number"
@@ -250,7 +251,7 @@ export function MetricsPageClient() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="bodyFatPct">Body Fat (%)</Label>
+                  <Label htmlFor="bodyFatPct">{t('metrics.bodyFatPct')}</Label>
                   <Input
                     id="bodyFatPct"
                     type="number"
@@ -261,7 +262,7 @@ export function MetricsPageClient() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="bodyAge">Body Age</Label>
+                  <Label htmlFor="bodyAge">{t('metrics.bodyAge')}</Label>
                   <Input
                     id="bodyAge"
                     type="number"
@@ -271,7 +272,7 @@ export function MetricsPageClient() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="visceralFat">Visceral Fat Level</Label>
+                  <Label htmlFor="visceralFat">{t('metrics.visceralFat')}</Label>
                   <Input
                     id="visceralFat"
                     type="number"
@@ -281,7 +282,7 @@ export function MetricsPageClient() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="muscleMass">Muscle Mass (kg)</Label>
+                  <Label htmlFor="muscleMass">{t('metrics.muscleMass')}</Label>
                   <Input
                     id="muscleMass"
                     type="number"
@@ -292,7 +293,7 @@ export function MetricsPageClient() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="boneMass">Bone Mass (kg)</Label>
+                  <Label htmlFor="boneMass">{t('metrics.boneMass')}</Label>
                   <Input
                     id="boneMass"
                     type="number"
@@ -303,7 +304,7 @@ export function MetricsPageClient() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="waterPct">Water (%)</Label>
+                  <Label htmlFor="waterPct">{t('metrics.waterPct')}</Label>
                   <Input
                     id="waterPct"
                     type="number"
@@ -314,12 +315,12 @@ export function MetricsPageClient() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="notes">Notes</Label>
+                  <Label htmlFor="notes">{t('metrics.notes')}</Label>
                   <Input
                     id="notes"
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
-                    placeholder="Optional notes"
+                    placeholder={t('metrics.notesPlaceholder')}
                   />
                 </div>
               </div>
@@ -331,10 +332,10 @@ export function MetricsPageClient() {
                 {saving ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Saving...
+                    {t('common.saving')}
                   </>
                 ) : (
-                  'Save'
+                  t('common.save')
                 )}
               </Button>
             </CardContent>
@@ -347,7 +348,7 @@ export function MetricsPageClient() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <TrendingDown className="w-5 h-5 text-teal-500" />
-                Weight Trend (Last 30 Days)
+                {t('metrics.weightTrend')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -386,25 +387,25 @@ export function MetricsPageClient() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <Card className="shadow-sm bg-teal-50 border-teal-100">
               <CardContent className="p-4 text-center">
-                <p className="text-sm text-teal-600 mb-1">Weight</p>
+                <p className="text-sm text-teal-600 mb-1">{t('metrics.weight')}</p>
                 <p className="text-2xl font-bold text-teal-700">{latestMetric.weight || '-'} kg</p>
               </CardContent>
             </Card>
             <Card className="shadow-sm bg-green-50 border-green-100">
               <CardContent className="p-4 text-center">
-                <p className="text-sm text-green-600 mb-1">BMI</p>
+                <p className="text-sm text-green-600 mb-1">{t('bmi.title')}</p>
                 <p className="text-2xl font-bold text-green-700">{latestMetric.bmi || '-'}</p>
               </CardContent>
             </Card>
             <Card className="shadow-sm bg-amber-50 border-amber-100">
               <CardContent className="p-4 text-center">
-                <p className="text-sm text-amber-600 mb-1">Body Fat</p>
+                <p className="text-sm text-amber-600 mb-1">{t('metrics.bodyFatPct')}</p>
                 <p className="text-2xl font-bold text-amber-700">{latestMetric.body_fat_pct || '-'}%</p>
               </CardContent>
             </Card>
             <Card className="shadow-sm bg-blue-50 border-blue-100">
               <CardContent className="p-4 text-center">
-                <p className="text-sm text-blue-600 mb-1">Muscle Mass</p>
+                <p className="text-sm text-blue-600 mb-1">{t('metrics.muscleMass')}</p>
                 <p className="text-2xl font-bold text-blue-700">{latestMetric.muscle_mass || '-'} kg</p>
               </CardContent>
             </Card>
@@ -416,15 +417,15 @@ export function MetricsPageClient() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Scale className="w-5 h-5 text-teal-500" />
-              History
+              {t('metrics.history')}
             </CardTitle>
           </CardHeader>
           <CardContent>
             {metrics.length === 0 ? (
               <div className="text-center py-8 text-gray-600">
                 <Scale className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                <p>No body metrics recorded yet.</p>
-                <p className="text-sm mt-2">Click "Add Entry" to start tracking your progress.</p>
+                <p>{t('metrics.noMetrics')}</p>
+                <p className="text-sm mt-2">{t('metrics.startTracking')}</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -435,7 +436,7 @@ export function MetricsPageClient() {
                   >
                     <div className="flex-1">
                       <p className="text-sm text-gray-500">
-                        {new Date(metric.recorded_at).toLocaleDateString('en-US', {
+                        {new Date(metric.recorded_at).toLocaleDateString(locale === 'zh-CN' ? 'zh-CN' : 'en-US', {
                           year: 'numeric',
                           month: 'short',
                           day: 'numeric',
@@ -443,8 +444,8 @@ export function MetricsPageClient() {
                       </p>
                       <div className="flex gap-4 mt-1">
                         <span className="text-teal-700 font-medium">{metric.weight || '-'} kg</span>
-                        <span className="text-green-700">{metric.bmi || '-'} BMI</span>
-                        <span className="text-amber-700">{metric.body_fat_pct || '-'}% BF</span>
+                        <span className="text-green-700">{metric.bmi || '-'} {t('bmi.title')}</span>
+                        <span className="text-amber-700">{metric.body_fat_pct || '-'}% {t('metrics.bodyFat')}</span>
                       </div>
                       {metric.notes && (
                         <p className="text-gray-500 text-sm mt-1">{metric.notes}</p>
