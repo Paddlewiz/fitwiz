@@ -54,7 +54,7 @@ export function ProgressModule({
   return (
     <div
       className={cn(
-        'relative bg-white rounded-lg p-3 shadow-sm border overflow-hidden transition-all duration-300',
+        'relative bg-white rounded-lg p-2 shadow-sm border overflow-hidden transition-all duration-300',
         achieved ? 'border-teal-200' : 'border-orange-200',
         showAchievedAnimation && 'animate-pulse border-teal-400',
         className
@@ -63,17 +63,17 @@ export function ProgressModule({
       {/* 左侧彩色高亮条（FIFA风格） */}
       <div
         className={cn(
-          'absolute left-0 top-0 bottom-0 w-1 transition-colors duration-300',
+          'absolute left-0 top-0 bottom-0 w-0.5 transition-colors duration-300',
           achieved ? 'bg-gradient-to-b from-teal-400 to-teal-600' : 'bg-gradient-to-b from-orange-400 to-orange-600'
         )}
       />
 
       <div className="flex items-center justify-between">
         {/* 左侧：图标 + 名称 */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           <div
             className={cn(
-              'w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300',
+              'w-6 h-6 rounded flex items-center justify-center transition-all duration-300',
               achieved ? 'bg-teal-100 text-teal-600' : 'bg-orange-100 text-orange-500',
               showAchievedAnimation && 'scale-110 animate-bounce'
             )}
@@ -81,7 +81,7 @@ export function ProgressModule({
             {icon}
           </div>
           <div>
-            <span className="font-medium text-gray-900 text-sm">{label}</span>
+            <span className="font-medium text-gray-900 text-xs">{label}</span>
             {!achieved && remaining > 0 && (
               <span className="text-xs text-orange-500 ml-1">
                 还差 {remaining.toFixed(0)}{unit}
@@ -97,7 +97,7 @@ export function ProgressModule({
         <div className="text-right">
           <span
             className={cn(
-              'font-bold text-base',
+              'font-bold text-sm',
               achieved ? 'text-teal-600' : 'text-orange-500'
             )}
           >
@@ -107,8 +107,8 @@ export function ProgressModule({
         </div>
       </div>
 
-      {/* 进度条 */}
-      <div className="mt-2 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+      {/* 进度条 - 缩小高度 */}
+      <div className="mt-1.5 h-1 bg-gray-100 rounded-full overflow-hidden">
         <div
           className={cn(
             'h-full rounded-full transition-all duration-1000 ease-out',
@@ -120,7 +120,7 @@ export function ProgressModule({
 
       {/* 提示信息 */}
       {hint && !achieved && (
-        <div className="mt-1.5 text-xs text-gray-500 bg-gray-50 rounded px-2 py-0.5">
+        <div className="mt-1 text-xs text-gray-500 bg-gray-50 rounded px-1.5 py-0.5">
           💡 {hint}
         </div>
       )}
@@ -180,18 +180,21 @@ export function ProgressModulesGroup({
     return '增加运动时间和强度';
   };
 
+  // 图标尺寸缩小
+  const iconSize = 'w-3.5 h-3.5';
+
   return (
-    <div className={cn('space-y-2', className)}>
+    <div className={cn('space-y-1.5', className)}>
       {/* 状态提示 */}
       {allAchieved && (
-        <div className="bg-gradient-to-r from-teal-500 to-emerald-500 text-white text-sm font-medium px-4 py-2 rounded-lg text-center animate-pulse">
+        <div className="bg-gradient-to-r from-teal-500 to-emerald-500 text-white text-xs font-medium px-3 py-1.5 rounded-lg text-center animate-pulse">
           🎉 三项达标，明天大概率体重下降！
         </div>
       )}
 
       {/* 进度模块 */}
       <ProgressModule
-        icon={<Beef className="w-4 h-4" />}
+        icon={<Beef className={iconSize} />}
         label="蛋白质摄入"
         current={proteinCurrent}
         target={proteinTarget}
@@ -201,7 +204,7 @@ export function ProgressModulesGroup({
       />
 
       <ProgressModule
-        icon={<Flame className="w-4 h-4" />}
+        icon={<Flame className={iconSize} />}
         label="能量缺口"
         current={energyDeficitCurrent}
         target={energyDeficitTarget}
@@ -211,7 +214,7 @@ export function ProgressModulesGroup({
       />
 
       <ProgressModule
-        icon={<Activity className="w-4 h-4" />}
+        icon={<Activity className={iconSize} />}
         label="运动消耗"
         current={exerciseCurrent}
         target={exerciseTarget}

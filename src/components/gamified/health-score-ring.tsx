@@ -74,14 +74,14 @@ export function HealthScoreRing({
   const scoreLevel = getScoreLevel(animatedScore);
 
   // SVG 环形参数 - 放大尺寸作为核心视觉焦点
-  const size = 280;
+  const size = 320;
   const center = size / 2;
-  const strokeWidth = 16;
+  const strokeWidth = 20;
 
-  // 外层三个分段环的半径 - 增大
-  const outerRadius = 120;
+  // 外层三个分段环的半径 - 增大为核心视觉
+  const outerRadius = 140;
   // 内层综合评分环的半径 - 增大
-  const innerRadius = 90;
+  const innerRadius = 105;
 
   // 计算弧度路径
   const createArcPath = (
@@ -212,19 +212,19 @@ export function HealthScoreRing({
         {/* 中心分数和等级 */}
         <text
           x={center}
-          y={center - 10}
+          y={center - 15}
           textAnchor="middle"
           className="fill-current text-gray-900 font-bold"
-          style={{ fontSize: '48px' }}
+          style={{ fontSize: '56px' }}
         >
           {animatedScore}
         </text>
         <text
           x={center}
-          y={center + 25}
+          y={center + 30}
           textAnchor="middle"
           className="fill-current text-gray-600"
-          style={{ fontSize: '18px' }}
+          style={{ fontSize: '20px' }}
         >
           {scoreLevel}
         </text>

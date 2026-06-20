@@ -59,8 +59,8 @@ export function GamifiedHealthPanel({
     return (
       <div className={cn('bg-gradient-to-br from-teal-50 to-emerald-50 rounded-2xl p-6 border border-teal-100', className)}>
         <div className="text-center">
-          {/* 空状态环形图 */}
-          <div className="relative w-48 h-48 mx-auto mb-6">
+          {/* 空状态环形图 - 放大尺寸 */}
+          <div className="relative w-64 h-64 mx-auto mb-6">
             <div className="absolute inset-0 rounded-full border-8 border-gray-200"></div>
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="text-center">
@@ -107,18 +107,18 @@ export function GamifiedHealthPanel({
         </div>
       )}
 
-      {/* 标题区域 */}
-      <div className={cn('text-center px-6', allAchieved ? 'pt-4' : 'pt-6')}>
-        <h2 className="text-lg font-medium text-gray-800">
+      {/* 标题区域 - 精简 */}
+      <div className={cn('text-center px-4', allAchieved ? 'pt-3' : 'pt-4')}>
+        <h2 className="text-base font-medium text-gray-800">
           {t('gamified.todayHealthStatus') || '今日健康状态'}
         </h2>
-        <p className="text-sm text-gray-500 mt-1">
+        <p className="text-xs text-gray-500 mt-0.5">
           {t('gamified.statusDescription') || '综合评估你的饮食与运动表现'}
         </p>
       </div>
 
-      {/* 环形仪表盘 - 核心视觉焦点 */}
-      <div className="flex justify-center px-6 py-4">
+      {/* 环形仪表盘 - 核心视觉焦点，放大 */}
+      <div className="flex justify-center px-4 py-3">
         <HealthScoreRing
           score={healthScore}
           proteinProgress={proteinProgress}
@@ -127,8 +127,8 @@ export function GamifiedHealthPanel({
         />
       </div>
 
-      {/* 进度条区域 - 紧凑布局 */}
-      <div className="px-4 pb-4">
+      {/* 进度条区域 - 紧凑布局，缩小 */}
+      <div className="px-3 pb-3">
         <ProgressModulesGroup
           proteinCurrent={todayProtein}
           proteinTarget={proteinTarget}
@@ -141,11 +141,11 @@ export function GamifiedHealthPanel({
 
       {/* 记录数据按钮 */}
       {showRecordButton && (
-        <div className="px-4 pb-4">
+        <div className="px-3 pb-3">
           <Button
             onClick={() => router.push('/record')}
             variant="outline"
-            className="w-full border-teal-200 text-teal-600 hover:bg-teal-50 rounded-xl"
+            className="w-full border-teal-200 text-teal-600 hover:bg-teal-50 rounded-lg"
           >
             <Plus className="w-4 h-4 mr-2" />
             {t('gamified.updateRecord') || '更新今日数据'}
@@ -153,8 +153,8 @@ export function GamifiedHealthPanel({
         </div>
       )}
 
-      {/* 底部说明 */}
-      <div className="px-6 pb-4 text-center">
+      {/* 底部说明 - 精简 */}
+      <div className="px-4 pb-3 text-center">
         <p className="text-xs text-gray-400">
           {t('gamified.calculationNote') || '健康指数 = 蛋白质30% + 能量缺口40% + 运动30%'}
         </p>

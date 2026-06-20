@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Footprints, RefreshCw, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Footprints, RefreshCw, AlertCircle, CheckCircle2, Plus } from 'lucide-react';
 
 interface StepsSyncProps {
   onSave?: (steps: number, calories: number) => Promise<void> | void;
@@ -230,13 +230,24 @@ export function StepsSync({ onSave, initialSteps = 0 }: StepsSyncProps) {
 
         {/* Action buttons */}
         <div className="flex gap-2">
+          {/* Save button */}
+          <Button 
+            onClick={() => onSave?.(steps, calories)}
+            className="flex-1 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white"
+            disabled={steps <= 0}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            保存步数记录
+          </Button>
+          
           {isSupported && !isTracking && !manualMode && (
             <Button 
               onClick={startTracking}
-              className="flex-1 bg-teal-500 hover:bg-teal-600 text-white"
+              variant="outline"
+              className="flex-1 border-teal-500 text-teal-600 hover:bg-teal-50"
             >
               <Footprints className="w-4 h-4 mr-2" />
-              开始追踪
+              自动追踪
             </Button>
           )}
           
