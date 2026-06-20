@@ -34,11 +34,11 @@ export function GamifiedHealthPanel({
   const { t } = useI18n();
   const router = useRouter();
 
-  // 计算各项进度
-  const proteinProgress = Math.min((todayProtein / proteinTarget) * 100, 100);
+  // 计算各项进度（防止除零错误）
+  const proteinProgress = proteinTarget > 0 ? Math.min((todayProtein / proteinTarget) * 100, 100) : 0;
   const energyDeficit = Math.max(tdee - todayIntake + todayExercise, 0);
-  const energyProgress = Math.min((energyDeficit / energyDeficitTarget) * 100, 100);
-  const exerciseProgress = Math.min((todayExercise / exerciseTarget) * 100, 100);
+  const energyProgress = energyDeficitTarget > 0 ? Math.min((energyDeficit / energyDeficitTarget) * 100, 100) : 0;
+  const exerciseProgress = exerciseTarget > 0 ? Math.min((todayExercise / exerciseTarget) * 100, 100) : 0;
 
   // 计算综合健康指数（加权平均）
   // 权重：蛋白质 30%，能量缺口 40%，运动消耗 30%

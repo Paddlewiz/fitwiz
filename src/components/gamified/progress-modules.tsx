@@ -26,8 +26,9 @@ export function ProgressModule({
   className,
 }: ProgressModuleProps) {
   const [animatedWidth, setAnimatedWidth] = useState(0);
-  const progress = Math.min((current / target) * 100, 100);
-  const remaining = Math.max(target - current, 0);
+  // 防止除零错误
+  const progress = target > 0 ? Math.min((current / target) * 100, 100) : 0;
+  const remaining = target > 0 ? Math.max(target - current, 0) : 0;
 
   // 动画效果
   useEffect(() => {
