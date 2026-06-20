@@ -23,9 +23,6 @@ const I18nContext = createContext<I18nContextType | undefined>(undefined);
 // Storage key for language preference
 const LANGUAGE_STORAGE_KEY = 'fitwiz-language';
 
-// Default language is Chinese
-const DEFAULT_LANGUAGE: Language = 'zh-CN';
-
 // Import translations
 import zhCN from '@/locales/zh-CN.json';
 import en from '@/locales/en.json';
@@ -35,21 +32,56 @@ const translations: Record<Language, Translation> = {
   'en': en,
 };
 
+// Detect default language based on timezone
+function detectDefaultLanguage(): Language {
+  try {
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    // Asia/Shanghai timezone → Chinese, others → English
+    if (timezone === 'Asia/Shanghai' || timezone.startsWith('Asia/China') || timezone === 'Asia/Chongqing' || timezone === 'Asia/Hong_Kong' || timezone === 'Asia/Macau') {
+      return 'zh-CN';
+    }
+    // Check if timezone suggests Chinese-speaking region
+    const chineseTimezones = [
+      'Asia/Shanghai',
+      'Asia/Beijing',
+      'Asia/Chongqing',
+      'Asia/Harbin',
+      'Asia/Kashgar',
+      'Asia/Urumqi',
+      'Asia/Hong_Kong',
+      'Asia/Macau',
+      'Asia/Taipei', // Taiwan
+    ];
+    if (chineseTimezones.includes(timezone)) {
+      return 'zh-CN';
+    }
+    return 'en';
+  } catch {
+    // Fallback to Chinese if timezone detection fails
+    return 'zh-CN';
+  }
+}
+
 // Provider component
 export function I18nProvider({ children }: { children: ReactNode }) {
-  const [language, setLanguageState] = useState<Language>(DEFAULT_LANGUAGE);
+  const [language, setLanguageState] = useState<Language>('zh-CN'); // Initial state, will be updated on mount
   const [mounted, setMounted] = useState(false);
 
-  // Load language from localStorage on mount
+  // Load language from localStorage or detect from timezone on mount
   useEffect(() => {
     const savedLanguage = localStorage.getItem(LANGUAGE_STORAGE_KEY);
     if (savedLanguage && (savedLanguage === 'zh-CN' || savedLanguage === 'en')) {
+      // User has manually set language preference, use it
       setLanguageState(savedLanguage as Language);
+    } else {
+      // First visit: detect language from timezone
+      const detectedLanguage = detectDefaultLanguage();
+      setLanguageState(detectedLanguage);
     }
     setMounted(true);
   }, []);
 
-  // Save language to localStorage when changed
+  // Save language to localStorage when changed (only after user manually changes)
   useEffect(() => {
     if (mounted) {
       localStorage.setItem(LANGUAGE_STORAGE_KEY, language);
@@ -126,6 +158,3 @@ export function useTranslation() {
     toggleLanguage: context.toggleLanguage,
   };
 }
-
-// Export language type for use in other components
-export type { Language };
