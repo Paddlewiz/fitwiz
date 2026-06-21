@@ -355,7 +355,11 @@
     "recordSuccess": "记录成功！",
     "readyToStart": "你已经准备好开始健康之旅了",
     "goToDashboard": "进入仪表盘",
-    "skip": "跳过引导"
+    "skip": "跳过引导",
+    "autoCalculated": "自动计算",
+    "fillAllFields": "请填写所有信息后继续",
+    "fillTargetWeight": "请填写目标体重后继续",
+    "recordWeightFirst": "请先记录体重后完成"
   },
   "gamified": {
     "todayHealthStatus": "今日健康状态",

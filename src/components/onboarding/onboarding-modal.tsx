@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useOnboarding, OnboardingStep, OnboardingData } from '@/lib/onboarding-context';
 import { useI18n } from '@/lib/i18n-context';
 import { X, ChevronLeft, ChevronRight, Check, Sparkles, Scale } from 'lucide-react';
@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
 
-// Step 1: Basic Info Component
+// Step 1: Basic Info Component - Auto-calculate when all fields are filled
 function Step1BasicInfo() {
   const { t } = useI18n();
   const { data, updateData, nextStep } = useOnboarding();
@@ -25,11 +25,11 @@ function Step1BasicInfo() {
   const [age, setAge] = useState(data.age?.toString() || '');
   const [height, setHeight] = useState(data.height?.toString() || '');
   const [weight, setWeight] = useState(data.currentWeight?.toString() || '');
-  const [calculated, setCalculated] = useState(false);
   const [bmi, setBMI] = useState<number | null>(null);
   const [tdee, setTDEE] = useState<number | null>(null);
   
-  const handleCalculate = () => {
+  // Auto-calculate BMI and TDEE when all fields are filled
+  const calculateResults = useCallback(() => {
     const ageNum = parseFloat(age);
     const heightNum = parseFloat(height);
     const weightNum = parseFloat(weight);
@@ -60,13 +60,21 @@ function Step1BasicInfo() {
         calculatedBMI: calculatedBMI,
         calculatedTDEE: calculatedTDEE,
       });
-      
-      setCalculated(true);
+    } else {
+      setBMI(null);
+      setTDEE(null);
     }
-  };
+  }, [age, height, weight, gender, updateData]);
+  
+  // Auto-calculate when any field changes
+  useEffect(() => {
+    calculateResults();
+  }, [calculateResults]);
+  
+  const isFormComplete = age && height && weight && parseFloat(age) > 0 && parseFloat(height) > 0 && parseFloat(weight) > 0;
   
   const handleNext = () => {
-    if (calculated) {
+    if (isFormComplete) {
       nextStep();
     }
   };
@@ -139,22 +147,14 @@ function Step1BasicInfo() {
         />
       </div>
       
-      {/* Calculate Button */}
-      {!calculated && (
-        <Button 
-          onClick={handleCalculate}
-          className="w-full bg-teal-500 hover:bg-teal-600"
-          disabled={!age || !height || !weight}
-        >
-          <Sparkles className="w-4 h-4 mr-2" />
-          {t('onboarding.calculate')}
-        </Button>
-      )}
-      
-      {/* Results */}
-      {calculated && bmi && tdee && (
+      {/* Results - Show automatically when calculated */}
+      {bmi && tdee && (
         <Card className="bg-teal-50 border-teal-200">
           <CardContent className="p-4">
+            <div className="flex items-center justify-center gap-2 mb-3">
+              <Sparkles className="w-4 h-4 text-teal-500" />
+              <span className="text-sm text-teal-600 font-medium">{t('onboarding.autoCalculated')}</span>
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="text-center">
                 <div className="text-3xl font-bold text-teal-600">{bmi.toFixed(1)}</div>
@@ -172,15 +172,21 @@ function Step1BasicInfo() {
         </Card>
       )}
       
-      {/* Next Step Button */}
-      {calculated && (
-        <Button 
-          onClick={handleNext}
-          className="w-full bg-teal-500 hover:bg-teal-600"
-        >
-          {t('onboarding.toStep2')}
-          <ChevronRight className="w-4 h-4 ml-2" />
-        </Button>
+      {/* Next Step Button - Always visible, enabled when form is complete */}
+      <Button 
+        onClick={handleNext}
+        className="w-full bg-teal-500 hover:bg-teal-600"
+        disabled={!isFormComplete}
+      >
+        {t('onboarding.toStep2')}
+        <ChevronRight className="w-4 h-4 ml-2" />
+      </Button>
+      
+      {/* Helper text when form is incomplete */}
+      {!isFormComplete && (
+        <p className="text-center text-sm text-gray-500">
+          {t('onboarding.fillAllFields')}
+        </p>
       )}
     </div>
   );
@@ -193,17 +199,17 @@ function getBMIStatus(bmi: number, t: (key: string, params?: Record<string, unkn
   return t('bmi.obese');
 }
 
-// Step 2: Goal Setting Component
+// Step 2: Goal Setting Component - Auto-calculate when fields are filled
 function Step2GoalSetting() {
   const { t } = useI18n();
   const { data, updateData, nextStep, prevStep } = useOnboarding();
   
   const [targetWeight, setTargetWeight] = useState(data.targetWeight?.toString() || '');
   const [targetWeeks, setTargetWeeks] = useState(data.targetWeeks?.toString() || '8');
-  const [calculated, setCalculated] = useState(false);
   const [recommendedCalories, setRecommendedCalories] = useState<number | null>(null);
   
-  const handleCalculate = () => {
+  // Auto-calculate recommended calories
+  const calculateGoal = useCallback(() => {
     const targetWeightNum = parseFloat(targetWeight);
     const targetWeeksNum = parseFloat(targetWeeks);
     const currentWeight = data.currentWeight || 0;
@@ -233,10 +239,17 @@ function Step2GoalSetting() {
         targetWeeks: targetWeeksNum,
         recommendedCalories: finalRecommended,
       });
-      
-      setCalculated(true);
+    } else {
+      setRecommendedCalories(null);
     }
-  };
+  }, [targetWeight, targetWeeks, data.currentWeight, data.calculatedTDEE, updateData]);
+  
+  // Auto-calculate when any field changes
+  useEffect(() => {
+    calculateGoal();
+  }, [calculateGoal]);
+  
+  const isFormComplete = targetWeight && targetWeeks && parseFloat(targetWeight) > 0 && parseFloat(targetWeeks) > 0;
   
   return (
     <div className="space-y-6">
@@ -300,22 +313,14 @@ function Step2GoalSetting() {
         ))}
       </div>
       
-      {/* Calculate Button */}
-      {!calculated && (
-        <Button 
-          onClick={handleCalculate}
-          className="w-full bg-teal-500 hover:bg-teal-600"
-          disabled={!targetWeight || !targetWeeks}
-        >
-          <Sparkles className="w-4 h-4 mr-2" />
-          {t('onboarding.calculateGoal')}
-        </Button>
-      )}
-      
-      {/* Results */}
-      {calculated && recommendedCalories && (
+      {/* Results - Show automatically when calculated */}
+      {recommendedCalories && (
         <Card className="bg-teal-50 border-teal-200">
           <CardContent className="p-4 space-y-4">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <Sparkles className="w-4 h-4 text-teal-500" />
+              <span className="text-sm text-teal-600 font-medium">{t('onboarding.autoCalculated')}</span>
+            </div>
             <div className="text-center">
               <div className="text-4xl font-bold text-teal-600">{recommendedCalories}</div>
               <div className="text-sm text-gray-600 mt-1">{t('onboarding.recommendedCalories')}</div>
@@ -340,18 +345,27 @@ function Step2GoalSetting() {
           <ChevronLeft className="w-4 h-4 mr-2" />
           {t('onboarding.prevStep')}
         </Button>
-        {calculated && (
-          <Button onClick={nextStep} className="flex-1 bg-teal-500 hover:bg-teal-600">
-            {t('onboarding.toStep3')}
-            <ChevronRight className="w-4 h-4 ml-2" />
-          </Button>
-        )}
+        <Button 
+          onClick={nextStep} 
+          className="flex-1 bg-teal-500 hover:bg-teal-600"
+          disabled={!isFormComplete}
+        >
+          {t('onboarding.toStep3')}
+          <ChevronRight className="w-4 h-4 ml-2" />
+        </Button>
       </div>
+      
+      {/* Helper text when form is incomplete */}
+      {!isFormComplete && (
+        <p className="text-center text-sm text-gray-500">
+          {t('onboarding.fillTargetWeight')}
+        </p>
+      )}
     </div>
   );
 }
 
-// Step 3: First Record Component  
+// Step 3: First Record Component - Simplified flow
 function Step3FirstRecord() {
   const { t } = useI18n();
   const { data, updateData, completeOnboarding, prevStep } = useOnboarding();
@@ -395,12 +409,12 @@ function Step3FirstRecord() {
         />
       </div>
       
-      {/* Record Button */}
+      {/* Record Button - Show when not recorded */}
       {!recorded && (
         <Button 
           onClick={handleRecord}
           className="w-full bg-teal-500 hover:bg-teal-600"
-          disabled={!weight}
+          disabled={!weight || parseFloat(weight) <= 0}
         >
           <Scale className="w-4 h-4 mr-2" />
           {t('onboarding.recordWeight')}
@@ -424,13 +438,22 @@ function Step3FirstRecord() {
           <ChevronLeft className="w-4 h-4 mr-2" />
           {t('onboarding.prevStep')}
         </Button>
-        {recorded && (
-          <Button onClick={handleComplete} className="flex-1 bg-teal-500 hover:bg-teal-600">
-            {t('onboarding.goToDashboard')}
-            <ChevronRight className="w-4 h-4 ml-2" />
-          </Button>
-        )}
+        <Button 
+          onClick={handleComplete} 
+          className="flex-1 bg-teal-500 hover:bg-teal-600"
+          disabled={!recorded}
+        >
+          {t('onboarding.goToDashboard')}
+          <Check className="w-4 h-4 ml-2" />
+        </Button>
       </div>
+      
+      {/* Helper text when not recorded */}
+      {!recorded && (
+        <p className="text-center text-sm text-gray-500">
+          {t('onboarding.recordWeightFirst')}
+        </p>
+      )}
     </div>
   );
 }

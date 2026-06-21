@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import { Inspector } from 'react-dev-inspector';
 import './globals.css';
 import { SupabaseConfigProvider } from '@/lib/supabase-config-inject';
 import { I18nProvider } from '@/lib/i18n-context';
@@ -56,12 +55,9 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const isDev = process.env.COZE_PROJECT_ENV === 'DEV';
-
   return (
     <html lang="zh-CN">
       <body className={`antialiased bg-gray-50`}>
-        {isDev && <Inspector />}
         <I18nProvider>
           <OnboardingProvider>
             <SupabaseConfigProvider>
