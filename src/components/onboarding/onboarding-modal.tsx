@@ -80,114 +80,119 @@ function Step1BasicInfo() {
   };
   
   return (
-    <div className="space-y-6">
-      <div className="text-center mb-4">
-        <p className="text-gray-600">
-          {t('onboarding.step1Desc')}
-        </p>
-      </div>
-      
-      {/* Gender Selection */}
-      <div className="space-y-2">
-        <Label>{t('onboarding.gender')}</Label>
-        <div className="flex gap-4">
-          <Button
-            variant={gender === 'male' ? 'default' : 'outline'}
-            className={`flex-1 ${gender === 'male' ? 'bg-teal-500 hover:bg-teal-600' : ''}`}
-            onClick={() => setGender('male')}
-          >
-            {t('onboarding.male')}
-          </Button>
-          <Button
-            variant={gender === 'female' ? 'default' : 'outline'}
-            className={`flex-1 ${gender === 'female' ? 'bg-teal-500 hover:bg-teal-600' : ''}`}
-            onClick={() => setGender('female')}
-          >
-            {t('onboarding.female')}
-          </Button>
+    <div className="flex flex-col h-full">
+      {/* Scrollable content area */}
+      <div className="flex-1 overflow-y-auto px-1 space-y-5">
+        <div className="text-center mb-3">
+          <p className="text-gray-600 text-sm">
+            {t('onboarding.step1Desc')}
+          </p>
         </div>
-      </div>
-      
-      {/* Age */}
-      <div className="space-y-2">
-        <Label htmlFor="age">{t('onboarding.age')}</Label>
-        <Input
-          id="age"
-          type="number"
-          placeholder={t('onboarding.agePlaceholder')}
-          value={age}
-          onChange={(e) => setAge(e.target.value)}
-          className="w-full"
-        />
-      </div>
-      
-      {/* Height */}
-      <div className="space-y-2">
-        <Label htmlFor="height">{t('onboarding.height')}</Label>
-        <Input
-          id="height"
-          type="number"
-          placeholder={t('onboarding.heightPlaceholder')}
-          value={height}
-          onChange={(e) => setHeight(e.target.value)}
-          className="w-full"
-        />
-      </div>
-      
-      {/* Weight */}
-      <div className="space-y-2">
-        <Label htmlFor="weight">{t('onboarding.currentWeight')}</Label>
-        <Input
-          id="weight"
-          type="number"
-          placeholder={t('onboarding.weightPlaceholder')}
-          value={weight}
-          onChange={(e) => setWeight(e.target.value)}
-          className="w-full"
-        />
-      </div>
-      
-      {/* Results - Show automatically when calculated */}
-      {bmi && tdee && (
-        <Card className="bg-teal-50 border-teal-200">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-center gap-2 mb-3">
-              <Sparkles className="w-4 h-4 text-teal-500" />
-              <span className="text-sm text-teal-600 font-medium">{t('onboarding.autoCalculated')}</span>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="text-center">
-                <div className="text-3xl font-bold text-teal-600">{bmi.toFixed(1)}</div>
-                <div className="text-sm text-gray-600">{t('onboarding.yourBMI')}</div>
+        
+        {/* Gender Selection */}
+        <div className="space-y-2">
+          <Label>{t('onboarding.gender')}</Label>
+          <div className="flex gap-4">
+            <Button
+              variant={gender === 'male' ? 'default' : 'outline'}
+              className={`flex-1 ${gender === 'male' ? 'bg-teal-500 hover:bg-teal-600' : ''}`}
+              onClick={() => setGender('male')}
+            >
+              {t('onboarding.male')}
+            </Button>
+            <Button
+              variant={gender === 'female' ? 'default' : 'outline'}
+              className={`flex-1 ${gender === 'female' ? 'bg-teal-500 hover:bg-teal-600' : ''}`}
+              onClick={() => setGender('female')}
+            >
+              {t('onboarding.female')}
+            </Button>
+          </div>
+        </div>
+        
+        {/* Age */}
+        <div className="space-y-2">
+          <Label htmlFor="age">{t('onboarding.age')}</Label>
+          <Input
+            id="age"
+            type="number"
+            placeholder={t('onboarding.agePlaceholder')}
+            value={age}
+            onChange={(e) => setAge(e.target.value)}
+            className="w-full"
+          />
+        </div>
+        
+        {/* Height */}
+        <div className="space-y-2">
+          <Label htmlFor="height">{t('onboarding.height')}</Label>
+          <Input
+            id="height"
+            type="number"
+            placeholder={t('onboarding.heightPlaceholder')}
+            value={height}
+            onChange={(e) => setHeight(e.target.value)}
+            className="w-full"
+          />
+        </div>
+        
+        {/* Weight */}
+        <div className="space-y-2">
+          <Label htmlFor="weight">{t('onboarding.currentWeight')}</Label>
+          <Input
+            id="weight"
+            type="number"
+            placeholder={t('onboarding.weightPlaceholder')}
+            value={weight}
+            onChange={(e) => setWeight(e.target.value)}
+            className="w-full"
+          />
+        </div>
+        
+        {/* Results - Show automatically when calculated */}
+        {bmi && tdee && (
+          <Card className="bg-teal-50 border-teal-200">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-center gap-2 mb-3">
+                <Sparkles className="w-4 h-4 text-teal-500" />
+                <span className="text-sm text-teal-600 font-medium">{t('onboarding.autoCalculated')}</span>
               </div>
-              <div className="text-center">
-                <div className="text-3xl font-bold text-teal-600">{tdee}</div>
-                <div className="text-sm text-gray-600">{t('onboarding.yourTDEE')}</div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-teal-600">{bmi.toFixed(1)}</div>
+                  <div className="text-sm text-gray-600">{t('onboarding.yourBMI')}</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-teal-600">{tdee}</div>
+                  <div className="text-sm text-gray-600">{t('onboarding.yourTDEE')}</div>
+                </div>
               </div>
-            </div>
-            <div className="mt-4 text-center text-sm text-gray-600">
-              {t('onboarding.bmiStatus', { status: getBMIStatus(bmi, t) })}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+              <div className="mt-3 text-center text-sm text-gray-600">
+                {t('onboarding.bmiStatus', { status: getBMIStatus(bmi, t) })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
       
-      {/* Next Step Button - Always visible, enabled when form is complete */}
-      <Button 
-        onClick={handleNext}
-        className="w-full bg-teal-500 hover:bg-teal-600"
-        disabled={!isFormComplete}
-      >
-        {t('onboarding.toStep2')}
-        <ChevronRight className="w-4 h-4 ml-2" />
-      </Button>
-      
-      {/* Helper text when form is incomplete */}
-      {!isFormComplete && (
-        <p className="text-center text-sm text-gray-500">
-          {t('onboarding.fillAllFields')}
-        </p>
-      )}
+      {/* Sticky button area - always visible at bottom */}
+      <div className="sticky bottom-0 bg-white pt-4 pb-2 border-t border-gray-100 -mx-6 px-6 mt-4">
+        <Button 
+          onClick={handleNext}
+          className="w-full bg-teal-500 hover:bg-teal-600"
+          disabled={!isFormComplete}
+        >
+          {t('onboarding.toStep2')}
+          <ChevronRight className="w-4 h-4 ml-2" />
+        </Button>
+        
+        {/* Helper text when form is incomplete */}
+        {!isFormComplete && (
+          <p className="text-center text-sm text-gray-500 mt-2">
+            {t('onboarding.fillAllFields')}
+          </p>
+        )}
+      </div>
     </div>
   );
 }
@@ -252,115 +257,120 @@ function Step2GoalSetting() {
   const isFormComplete = targetWeight && targetWeeks && parseFloat(targetWeight) > 0 && parseFloat(targetWeeks) > 0;
   
   return (
-    <div className="space-y-6">
-      <div className="text-center mb-4">
-        <p className="text-gray-600">
-          {t('onboarding.step2Desc')}
-        </p>
-      </div>
-      
-      {/* Current Weight Display */}
-      <Card className="bg-gray-50">
-        <CardContent className="p-4">
-          <div className="flex justify-between items-center">
-            <span className="text-gray-600">{t('onboarding.currentWeight')}</span>
-            <span className="text-xl font-bold">{data.currentWeight} kg</span>
-          </div>
-        </CardContent>
-      </Card>
-      
-      {/* Target Weight */}
-      <div className="space-y-2">
-        <Label htmlFor="targetWeight">{t('onboarding.targetWeight')}</Label>
-        <Input
-          id="targetWeight"
-          type="number"
-          placeholder={t('onboarding.targetWeightPlaceholder')}
-          value={targetWeight}
-          onChange={(e) => setTargetWeight(e.target.value)}
-          className="w-full"
-        />
-      </div>
-      
-      {/* Target Timeline */}
-      <div className="space-y-2">
-        <Label htmlFor="targetWeeks">{t('onboarding.targetTimeline')}</Label>
-        <div className="flex gap-2">
-          <Input
-            id="targetWeeks"
-            type="number"
-            placeholder="8"
-            value={targetWeeks}
-            onChange={(e) => setTargetWeeks(e.target.value)}
-            className="flex-1"
-          />
-          <span className="flex items-center text-gray-600">{t('onboarding.weeks')}</span>
+    <div className="flex flex-col h-full">
+      {/* Scrollable content area */}
+      <div className="flex-1 overflow-y-auto px-1 space-y-5">
+        <div className="text-center mb-3">
+          <p className="text-gray-600 text-sm">
+            {t('onboarding.step2Desc')}
+          </p>
         </div>
-      </div>
-      
-      {/* Quick Options */}
-      <div className="flex gap-2">
-        {[4, 8, 12].map(weeks => (
-          <Button
-            key={weeks}
-            variant={targetWeeks === weeks.toString() ? 'default' : 'outline'}
-            size="sm"
-            className={`flex-1 ${targetWeeks === weeks.toString() ? 'bg-teal-500 hover:bg-teal-600' : ''}`}
-            onClick={() => setTargetWeeks(weeks.toString())}
-          >
-            {weeks} {t('onboarding.weeks')}
-          </Button>
-        ))}
-      </div>
-      
-      {/* Results - Show automatically when calculated */}
-      {recommendedCalories && (
-        <Card className="bg-teal-50 border-teal-200">
-          <CardContent className="p-4 space-y-4">
-            <div className="flex items-center justify-center gap-2 mb-2">
-              <Sparkles className="w-4 h-4 text-teal-500" />
-              <span className="text-sm text-teal-600 font-medium">{t('onboarding.autoCalculated')}</span>
-            </div>
-            <div className="text-center">
-              <div className="text-4xl font-bold text-teal-600">{recommendedCalories}</div>
-              <div className="text-sm text-gray-600 mt-1">{t('onboarding.recommendedCalories')}</div>
-            </div>
-            <div className="bg-white rounded-lg p-3 text-sm">
-              <p className="text-gray-600">
-                {t('onboarding.goalPlanDesc', {
-                  current: data.currentWeight ?? 0,
-                  target: targetWeight,
-                  weeks: targetWeeks,
-                  calories: recommendedCalories
-                })}
-              </p>
+        
+        {/* Current Weight Display */}
+        <Card className="bg-gray-50">
+          <CardContent className="p-3">
+            <div className="flex justify-between items-center">
+              <span className="text-gray-600">{t('onboarding.currentWeight')}</span>
+              <span className="text-lg font-bold">{data.currentWeight} kg</span>
             </div>
           </CardContent>
         </Card>
-      )}
-      
-      {/* Navigation */}
-      <div className="flex gap-4">
-        <Button variant="outline" onClick={prevStep} className="flex-1">
-          <ChevronLeft className="w-4 h-4 mr-2" />
-          {t('onboarding.prevStep')}
-        </Button>
-        <Button 
-          onClick={nextStep} 
-          className="flex-1 bg-teal-500 hover:bg-teal-600"
-          disabled={!isFormComplete}
-        >
-          {t('onboarding.toStep3')}
-          <ChevronRight className="w-4 h-4 ml-2" />
-        </Button>
+        
+        {/* Target Weight */}
+        <div className="space-y-2">
+          <Label htmlFor="targetWeight">{t('onboarding.targetWeight')}</Label>
+          <Input
+            id="targetWeight"
+            type="number"
+            placeholder={t('onboarding.targetWeightPlaceholder')}
+            value={targetWeight}
+            onChange={(e) => setTargetWeight(e.target.value)}
+            className="w-full"
+          />
+        </div>
+        
+        {/* Target Timeline */}
+        <div className="space-y-2">
+          <Label htmlFor="targetWeeks">{t('onboarding.targetTimeline')}</Label>
+          <div className="flex gap-2">
+            <Input
+              id="targetWeeks"
+              type="number"
+              placeholder="8"
+              value={targetWeeks}
+              onChange={(e) => setTargetWeeks(e.target.value)}
+              className="flex-1"
+            />
+            <span className="flex items-center text-gray-600">{t('onboarding.weeks')}</span>
+          </div>
+        </div>
+        
+        {/* Quick Options */}
+        <div className="flex gap-2">
+          {[4, 8, 12].map(weeks => (
+            <Button
+              key={weeks}
+              variant={targetWeeks === weeks.toString() ? 'default' : 'outline'}
+              size="sm"
+              className={`flex-1 ${targetWeeks === weeks.toString() ? 'bg-teal-500 hover:bg-teal-600' : ''}`}
+              onClick={() => setTargetWeeks(weeks.toString())}
+            >
+              {weeks} {t('onboarding.weeks')}
+            </Button>
+          ))}
+        </div>
+        
+        {/* Results - Show automatically when calculated */}
+        {recommendedCalories && (
+          <Card className="bg-teal-50 border-teal-200">
+            <CardContent className="p-4 space-y-3">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <Sparkles className="w-4 h-4 text-teal-500" />
+                <span className="text-sm text-teal-600 font-medium">{t('onboarding.autoCalculated')}</span>
+              </div>
+              <div className="text-center">
+                <div className="text-3xl font-bold text-teal-600">{recommendedCalories}</div>
+                <div className="text-sm text-gray-600 mt-1">{t('onboarding.recommendedCalories')}</div>
+              </div>
+              <div className="bg-white rounded-lg p-3 text-sm">
+                <p className="text-gray-600">
+                  {t('onboarding.goalPlanDesc', {
+                    current: data.currentWeight ?? 0,
+                    target: targetWeight,
+                    weeks: targetWeeks,
+                    calories: recommendedCalories
+                  })}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
       
-      {/* Helper text when form is incomplete */}
-      {!isFormComplete && (
-        <p className="text-center text-sm text-gray-500">
-          {t('onboarding.fillTargetWeight')}
-        </p>
-      )}
+      {/* Sticky button area - always visible at bottom */}
+      <div className="sticky bottom-0 bg-white pt-4 pb-2 border-t border-gray-100 -mx-6 px-6 mt-4">
+        <div className="flex gap-3">
+          <Button variant="outline" onClick={prevStep} className="flex-1">
+            <ChevronLeft className="w-4 h-4 mr-2" />
+            {t('onboarding.prevStep')}
+          </Button>
+          <Button 
+            onClick={nextStep} 
+            className="flex-1 bg-teal-500 hover:bg-teal-600"
+            disabled={!isFormComplete}
+          >
+            {t('onboarding.toStep3')}
+            <ChevronRight className="w-4 h-4 ml-2" />
+          </Button>
+        </div>
+        
+        {/* Helper text when form is incomplete */}
+        {!isFormComplete && (
+          <p className="text-center text-sm text-gray-500 mt-2">
+            {t('onboarding.fillTargetWeight')}
+          </p>
+        )}
+      </div>
     </div>
   );
 }
@@ -389,71 +399,76 @@ function Step3FirstRecord() {
   };
   
   return (
-    <div className="space-y-6">
-      <div className="text-center mb-4">
-        <p className="text-gray-600">
-          {t('onboarding.step3Desc')}
-        </p>
+    <div className="flex flex-col h-full">
+      {/* Scrollable content area */}
+      <div className="flex-1 overflow-y-auto px-1 space-y-5">
+        <div className="text-center mb-3">
+          <p className="text-gray-600 text-sm">
+            {t('onboarding.step3Desc')}
+          </p>
+        </div>
+        
+        {/* Weight Input */}
+        <div className="space-y-2">
+          <Label htmlFor="firstWeight">{t('onboarding.recordFirstWeight')}</Label>
+          <Input
+            id="firstWeight"
+            type="number"
+            placeholder={t('onboarding.weightPlaceholder')}
+            value={weight}
+            onChange={(e) => setWeight(e.target.value)}
+            className="w-full"
+          />
+        </div>
+        
+        {/* Record Button - Show when not recorded */}
+        {!recorded && (
+          <Button 
+            onClick={handleRecord}
+            className="w-full bg-teal-500 hover:bg-teal-600"
+            disabled={!weight || parseFloat(weight) <= 0}
+          >
+            <Scale className="w-4 h-4 mr-2" />
+            {t('onboarding.recordWeight')}
+          </Button>
+        )}
+        
+        {/* Success Message */}
+        {recorded && (
+          <Card className="bg-green-50 border-green-200">
+            <CardContent className="p-4 text-center">
+              <Check className="w-10 h-10 text-green-500 mx-auto mb-2" />
+              <p className="text-green-600 font-medium">{t('onboarding.recordSuccess')}</p>
+              <p className="text-gray-600 text-sm mt-1">{t('onboarding.readyToStart')}</p>
+            </CardContent>
+          </Card>
+        )}
       </div>
       
-      {/* Weight Input */}
-      <div className="space-y-2">
-        <Label htmlFor="firstWeight">{t('onboarding.recordFirstWeight')}</Label>
-        <Input
-          id="firstWeight"
-          type="number"
-          placeholder={t('onboarding.weightPlaceholder')}
-          value={weight}
-          onChange={(e) => setWeight(e.target.value)}
-          className="w-full"
-        />
+      {/* Sticky button area - always visible at bottom */}
+      <div className="sticky bottom-0 bg-white pt-4 pb-2 border-t border-gray-100 -mx-6 px-6 mt-4">
+        <div className="flex gap-3">
+          <Button variant="outline" onClick={prevStep} className="flex-1">
+            <ChevronLeft className="w-4 h-4 mr-2" />
+            {t('onboarding.prevStep')}
+          </Button>
+          <Button 
+            onClick={handleComplete} 
+            className="flex-1 bg-teal-500 hover:bg-teal-600"
+            disabled={!recorded}
+          >
+            {t('onboarding.goToDashboard')}
+            <Check className="w-4 h-4 ml-2" />
+          </Button>
+        </div>
+        
+        {/* Helper text when not recorded */}
+        {!recorded && (
+          <p className="text-center text-sm text-gray-500 mt-2">
+            {t('onboarding.recordWeightFirst')}
+          </p>
+        )}
       </div>
-      
-      {/* Record Button - Show when not recorded */}
-      {!recorded && (
-        <Button 
-          onClick={handleRecord}
-          className="w-full bg-teal-500 hover:bg-teal-600"
-          disabled={!weight || parseFloat(weight) <= 0}
-        >
-          <Scale className="w-4 h-4 mr-2" />
-          {t('onboarding.recordWeight')}
-        </Button>
-      )}
-      
-      {/* Success Message */}
-      {recorded && (
-        <Card className="bg-green-50 border-green-200">
-          <CardContent className="p-4 text-center">
-            <Check className="w-12 h-12 text-green-500 mx-auto mb-2" />
-            <p className="text-green-600 font-medium">{t('onboarding.recordSuccess')}</p>
-            <p className="text-gray-600 text-sm mt-1">{t('onboarding.readyToStart')}</p>
-          </CardContent>
-        </Card>
-      )}
-      
-      {/* Navigation */}
-      <div className="flex gap-4">
-        <Button variant="outline" onClick={prevStep} className="flex-1">
-          <ChevronLeft className="w-4 h-4 mr-2" />
-          {t('onboarding.prevStep')}
-        </Button>
-        <Button 
-          onClick={handleComplete} 
-          className="flex-1 bg-teal-500 hover:bg-teal-600"
-          disabled={!recorded}
-        >
-          {t('onboarding.goToDashboard')}
-          <Check className="w-4 h-4 ml-2" />
-        </Button>
-      </div>
-      
-      {/* Helper text when not recorded */}
-      {!recorded && (
-        <p className="text-center text-sm text-gray-500">
-          {t('onboarding.recordWeightFirst')}
-        </p>
-      )}
     </div>
   );
 }
@@ -474,8 +489,8 @@ export function OnboardingModal() {
   
   return (
     <Dialog open={isModalOpen} onOpenChange={(open) => !open && closeModal()}>
-      <DialogContent className="max-w-md mx-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-md mx-auto max-h-[90vh] flex flex-col p-6">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle className="text-center text-xl">
             {t('onboarding.title')}
           </DialogTitle>
@@ -485,7 +500,7 @@ export function OnboardingModal() {
         </DialogHeader>
         
         {/* Progress Indicator */}
-        <div className="flex justify-center gap-2 mb-4">
+        <div className="flex justify-center gap-2 mb-3 flex-shrink-0">
           {[1, 2, 3].map((step) => (
             <div
               key={step}
@@ -503,17 +518,19 @@ export function OnboardingModal() {
         </div>
         
         {/* Current Step Title */}
-        <div className="text-center font-medium text-gray-700 mb-4">
+        <div className="text-center font-medium text-gray-700 mb-2 flex-shrink-0">
           {stepTitles[currentStep]}
         </div>
         
-        {/* Step Content */}
-        {currentStep === 1 && <Step1BasicInfo />}
-        {currentStep === 2 && <Step2GoalSetting />}
-        {currentStep === 3 && <Step3FirstRecord />}
+        {/* Step Content - takes remaining space */}
+        <div className="flex-1 min-h-0">
+          {currentStep === 1 && <Step1BasicInfo />}
+          {currentStep === 2 && <Step2GoalSetting />}
+          {currentStep === 3 && <Step3FirstRecord />}
+        </div>
         
-        {/* Skip Button */}
-        <div className="text-center">
+        {/* Skip Button - fixed at very bottom */}
+        <div className="text-center flex-shrink-0 pt-2">
           <Button variant="ghost" size="sm" onClick={closeModal} className="text-gray-500">
             {t('onboarding.skip')}
           </Button>
