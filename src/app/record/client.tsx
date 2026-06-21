@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { Trash2, ArrowLeft, ChefHat, Dumbbell, Footprints, Scale, TrendingUp, TrendingDown } from 'lucide-react';
+import { Trash2, ArrowLeft, ChefHat, Dumbbell, Scale, TrendingUp, TrendingDown } from 'lucide-react';
 
 // 今日记录数据类型
 interface TodayDietLog {
@@ -29,9 +29,8 @@ interface TodayDietLog {
 interface TodayExerciseLog {
   id: string;
   exercise_type: string;
-  duration: number;
+  duration_minutes: number;
   calories_burned: number;
-  steps?: number;
   weight_kg?: number;
   sets?: number;
   reps?: number;
@@ -176,24 +175,39 @@ export function RecordPageClient() {
       const { error } = await supabase.from('body_metrics').insert({
         user_id: user.id,
         weight: data.weight,
-        body_fat: data.bodyFat,
-        bmi: bmi,
-        body_age: data.bodyAge,
-        bmr: data.bmr,
-        visceral_fat: data.visceralFat,
-        muscle_mass: data.muscleMass,
-        bone_mass: data.boneMass,
-        water_percentage: data.waterPercentage,
+        body_fat_pct: data.bodyFat || null,
+        bmi: bmi || null,
+        body_age: data.bodyAge ? Math.round(data.bodyAge) : null,
+        bmr: data.bmr ? Math.round(data.bmr) : null,
+        visceral_fat: data.visceralFat ? Math.round(data.visceralFat) : null,
+        muscle_mass: data.muscleMass || null,
+        bone_mass: data.boneMass || null,
+        water_pct: data.waterPercentage || null,
         recorded_at: new Date().toISOString(),
       });
 
       if (error) throw error;
 
+      // 如果用户填了基础代谢率，用 BMR × 活动系数 更新 user_profiles.tdee
+      if (data.bmr && data.bmr > 0) {
+        const activityMultiplier: Record<string, number> = {
+          sedentary: 1.2, light: 1.375, moderate: 1.55, active: 1.725, veryActive: 1.9,
+        };
+        const multiplier = activityMultiplier[userProfile?.activity_level || 'moderate'] || 1.55;
+        const newTdee = Math.round(data.bmr * multiplier);
+
+        await supabase
+          .from('user_profiles')
+          .update({ tdee: newTdee, updated_at: new Date().toISOString() })
+          .eq('user_id', user.id);
+      }
+
       completeOnboarding();
       toast.success(t('record.bodyDataSaved'));
-    } catch (error) {
+    } catch (error: any) {
+      const errMsg = error?.message || error?.code || JSON.stringify(error);
       console.error('Error saving body data:', error);
-      toast.error(t('common.saveFailed'));
+      toast.error(`保存失败: ${errMsg}`);
     } finally {
       setIsSaving(false);
     }
@@ -217,10 +231,12 @@ export function RecordPageClient() {
         date: today,
         meal_type: data.mealType,
         food_name: data.foodName,
+        portion_size: data.portionSize || null,
         calories: data.calories,
         protein: data.protein,
         carbs: data.carbs,
         fat: data.fat,
+        sodium_mg: data.sodium || 0,
         created_at: new Date().toISOString(),
       });
 
@@ -254,9 +270,8 @@ export function RecordPageClient() {
         user_id: user.id,
         date: today,
         exercise_type: data.exerciseType,
-        duration: data.duration,
+        duration_minutes: data.duration || null,
         calories_burned: data.caloriesBurned,
-        steps: data.steps,
         weight_kg: data.weight || null,
         sets: data.sets || null,
         reps: data.reps || null,
@@ -294,9 +309,8 @@ export function RecordPageClient() {
         user_id: user.id,
         date: today,
         exercise_type: '步行',
-        duration: Math.round(steps / 100), // 大约每100步需要1分钟
+        duration_minutes: Math.round(steps / 100),
         calories_burned: calories,
-        steps: steps,
         created_at: new Date().toISOString(),
       });
 
@@ -464,20 +478,14 @@ export function RecordPageClient() {
                   <div key={log.id} className="flex items-center justify-between bg-gray-50 rounded-lg p-2.5">
                     <div className="flex items-center gap-2">
                       <div className="flex items-center gap-1">
-                        {log.steps ? (
-                          <Footprints className="w-3.5 h-3.5 text-teal-500" />
-                        ) : (
-                          <Dumbbell className="w-3.5 h-3.5 text-teal-500" />
-                        )}
+                        <Dumbbell className="w-3.5 h-3.5 text-teal-500" />
                         <span className="font-medium text-gray-900 text-sm">{log.exercise_type}</span>
                       </div>
                       <div className="text-xs text-gray-500">
-                        {log.steps ? (
-                          <span>{log.steps}步 · {log.calories_burned}kcal</span>
-                        ) : log.sets ? (
+                        {log.sets ? (
                           <span>{log.sets}组×{log.reps || 0}次{log.weight_kg ? ` · ${log.weight_kg}kg` : ''} · {log.calories_burned}kcal</span>
                         ) : (
-                          <span>{log.duration}分钟 · {log.calories_burned}kcal</span>
+                          <span>{log.duration_minutes || 0}分钟 · {log.calories_burned}kcal</span>
                         )}
                       </div>
                     </div>

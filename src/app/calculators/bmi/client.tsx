@@ -5,8 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calculator, AlertCircle, CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
+import { Calculator, AlertCircle, CheckCircle, AlertTriangle, XCircle, ArrowLeft } from 'lucide-react';
 import { useI18n } from '@/lib/i18n-context';
+import { useRouter } from 'next/navigation';
 
 interface BMIResult {
   bmi: number;
@@ -27,6 +28,7 @@ const bmiRanges = [
 
 export function BMICalculatorClient() {
   const { t } = useI18n();
+  const router = useRouter();
   const [weight, setWeight] = useState<string>('70');
   const [height, setHeight] = useState<string>('175');
   const [unitSystem, setUnitSystem] = useState<'metric' | 'imperial'>('metric');
@@ -89,6 +91,12 @@ export function BMICalculatorClient() {
 
   return (
     <div className="max-w-xl mx-auto">
+      <div className="mb-4">
+        <Button variant="ghost" size="sm" onClick={() => router.push('/')} className="text-gray-600 hover:text-teal-600">
+          <ArrowLeft className="w-4 h-4 mr-1" />
+          返回首页
+        </Button>
+      </div>
       <Card className="shadow-lg border-gray-100">
         <CardHeader className="bg-gradient-to-r from-teal-500 to-teal-600 text-white rounded-t-lg">
           <CardTitle className="flex items-center gap-2">

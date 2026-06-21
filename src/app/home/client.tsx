@@ -25,6 +25,7 @@ interface TodayData {
   exerciseTarget: number;
   tdee: number;
   intake: number;
+  sodium: number;
 }
 
 // Landing Page 组件 - 未登录状态显示
@@ -163,11 +164,55 @@ function LoggedInHome({ todayData }: { todayData: TodayData }) {
         </div>
       </section>
 
-      {/* 记录今日数据按钮 - 醒目 */}
+      {/* 钠盐摄入监控 */}
       <section className="px-4 py-3">
         <div className="container mx-auto max-w-md">
+          <Card className="bg-white shadow-sm">
+            <CardContent className="p-4">
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-1.5">
+                  <span className="text-base">🧂</span>
+                  钠盐摄入
+                </h3>
+                <span
+                  className="text-sm font-medium"
+                  style={{ color: todayData.sodium <= 0 ? '#9ca3af' : `hsl(${Math.max(0, 140 - (todayData.sodium / 2000) * 140)}, 70%, 45%)` }}
+                >
+                  {todayData.sodium} / 2000 mg
+                </span>
+              </div>
+              <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-500"
+                  style={{
+                    width: `${Math.min((todayData.sodium / 2000) * 100, 100)}%`,
+                    backgroundColor: todayData.sodium <= 0 ? '#d1d5db' : `hsl(${Math.max(0, 140 - (todayData.sodium / 2000) * 140)}, 70%, 50%)`,
+                  }}
+                />
+              </div>
+              {todayData.sodium > 2000 ? (
+                <p className="text-xs mt-2" style={{ color: `hsl(0, 70%, 45%)` }}>
+                  ⚠ 今日钠盐已超标！超标{todayData.sodium - 2000}mg，建议每日不超过2000mg（约5g食盐）。钠超标可能影响次日身体各项数据。
+                </p>
+              ) : todayData.sodium > 1500 ? (
+                <p className="text-xs mt-2" style={{ color: `hsl(35, 70%, 45%)` }}>
+                  今日钠盐接近上限，注意控制后续饮食
+                </p>
+              ) : todayData.sodium > 0 ? (
+                <p className="text-xs text-gray-500 mt-2">每日建议摄入量不超过2000mg（约5g食盐）</p>
+              ) : (
+                <p className="text-xs text-gray-400 mt-2">记录饮食后自动统计钠盐摄入</p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </section>
+
+      {/* 记录今日数据按钮 - 醒目 */}
+      <section className="px-4 pb-3">
+        <div className="container mx-auto max-w-md">
           <Link href="/record">
-            <Button 
+            <Button
               className="w-full bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white font-semibold py-5 rounded-xl shadow-lg shadow-teal-200/50"
               size="lg"
             >
@@ -182,11 +227,24 @@ function LoggedInHome({ todayData }: { todayData: TodayData }) {
       <section className="px-4 py-3">
         <div className="container mx-auto max-w-md">
           <div className="grid grid-cols-2 gap-3">
+            <Link href="/metrics">
+              <Card className="bg-white hover:shadow-md transition-shadow cursor-pointer border-teal-100">
+                <CardContent className="p-3 flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-teal-100 flex items-center justify-center">
+                    <LineChart className="w-4 h-4 text-teal-600" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="font-medium text-gray-900 text-sm">身体数据</span>
+                    <span className="text-xs text-gray-400">趋势图 · 历史记录</span>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
             <Link href="/calculators/tdee">
               <Card className="bg-white hover:shadow-md transition-shadow cursor-pointer">
                 <CardContent className="p-3 flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-teal-100 flex items-center justify-center">
-                    <Calculator className="w-4 h-4 text-teal-600" />
+                  <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center">
+                    <Calculator className="w-4 h-4 text-emerald-600" />
                   </div>
                   <span className="font-medium text-gray-900 text-sm">TDEE计算器</span>
                 </CardContent>
@@ -237,7 +295,7 @@ export function HomeClient() {
         // 获取今日饮食记录
         const { data: dietLogs } = await supabase
           .from('diet_logs')
-          .select('calories, protein')
+          .select('calories, protein, sodium_mg')
           .eq('user_id', user.id)
           .eq('date', today);
         
@@ -252,6 +310,7 @@ export function HomeClient() {
         const totalIntake = (dietLogs || []).reduce((sum, log) => sum + (log.calories || 0), 0);
         const totalProtein = (dietLogs || []).reduce((sum, log) => sum + (log.protein || 0), 0);
         const totalExercise = (exerciseLogs || []).reduce((sum, log) => sum + (log.calories_burned || 0), 0);
+        const totalSodium = (dietLogs || []).reduce((sum, log) => sum + (log.sodium_mg || 0), 0);
         
         // 从用户档案获取目标值，使用默认值作为fallback
         const tdee = profile?.tdee || 1800;
@@ -268,6 +327,7 @@ export function HomeClient() {
           exerciseTarget: exerciseTarget,
           tdee: tdee,
           intake: totalIntake,
+          sodium: totalSodium,
         });
       }
       
@@ -306,5 +366,6 @@ export function HomeClient() {
     exerciseTarget: 300,
     tdee: 1800,
     intake: 0,
+    sodium: 0,
   }} />;
 }

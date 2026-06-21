@@ -167,9 +167,12 @@ export function ProgressModulesGroup({
   const getEnergyHint = () => {
     if (energyAchieved) return undefined;
     const remaining = energyDeficitTarget - energyDeficitCurrent;
-    if (remaining <= 100) return '少吃一块饼干即可达标';
-    if (remaining <= 200) return '步行20分钟即可达标';
-    return '控制饮食+增加运动';
+    // 步行约4kcal/分钟（METs 3.5 × 70kg ÷ 60），慢跑约7kcal/分钟
+    const walkMin = Math.ceil(remaining / 4);
+    const jogMin = Math.ceil(remaining / 7);
+    if (walkMin <= 15) return `快走${walkMin}分钟即可补齐缺口`;
+    if (walkMin <= 30) return `快走${walkMin}分钟或慢跑${jogMin}分钟`;
+    return `慢跑${jogMin}分钟或快走${walkMin}分钟可补齐缺口`;
   };
 
   const getExerciseHint = () => {

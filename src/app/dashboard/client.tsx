@@ -46,13 +46,14 @@ interface BodyMetric {
   id: string;
   created_at: string;
   weight: number;
-  body_fat?: number;
+  body_fat_pct?: number;
   bmi?: number;
   body_age?: number;
+  bmr?: number;
   visceral_fat?: number;
   muscle_mass?: number;
   bone_mass?: number;
-  water_percent?: number;
+  water_pct?: number;
 }
 
 interface DailyCalorieData {
@@ -301,7 +302,7 @@ export default function DashboardClient() {
   
   // Recommended targets for gamified panel
   const proteinTarget = Math.round((targetCalories * 0.25) / 4); // 25% of calories from protein, 4 cal per gram
-  const energyDeficitTarget = Math.max(0, tdee - targetCalories); // Daily deficit target
+  const energyDeficitTarget = 500; // 每日能量缺口目标固定500kcal
   const exerciseTarget = 300; // Standard exercise burn target
   
   // Loading state with timeout indicator
@@ -425,7 +426,7 @@ export default function DashboardClient() {
           showRecordButton={true}
         />
         
-        {/* 钠盐摄入监控 */}
+        {/* 钠盐摄入监控 - 平滑渐变色 */}
         <Card className="bg-white shadow-sm">
           <CardContent className="p-4">
             <div className="flex justify-between items-center mb-2">
@@ -433,20 +434,30 @@ export default function DashboardClient() {
                 <span className="text-base">🧂</span>
                 钠盐摄入
               </h3>
-              <span className={`text-sm font-medium ${todaySodium > 2000 ? 'text-red-600' : todaySodium > 1500 ? 'text-orange-500' : 'text-teal-600'}`}>
+              <span
+                className="text-sm font-medium"
+                style={{ color: todaySodium <= 0 ? '#9ca3af' : `hsl(${Math.max(0, 140 - (todaySodium / 2000) * 140)}, 70%, 45%)` }}
+              >
                 {todaySodium} / 2000 mg
               </span>
             </div>
             <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
               <div
-                className={`h-full rounded-full transition-all duration-500 ${
-                  todaySodium > 2000 ? 'bg-red-500' : todaySodium > 1500 ? 'bg-orange-500' : 'bg-teal-500'
-                }`}
-                style={{ width: `${Math.min((todaySodium / 2000) * 100, 100)}%` }}
+                className="h-full rounded-full transition-all duration-500"
+                style={{
+                  width: `${Math.min((todaySodium / 2000) * 100, 100)}%`,
+                  backgroundColor: todaySodium <= 0 ? '#d1d5db' : `hsl(${Math.max(0, 140 - (todaySodium / 2000) * 140)}, 70%, 50%)`,
+                }}
               />
             </div>
             {todaySodium > 2000 ? (
-              <p className="text-xs text-red-500 mt-2">⚠ 今日钠盐已超标！建议每日摄入不超过2000mg（约5g食盐）</p>
+              <p className="text-xs mt-2" style={{ color: `hsl(0, 70%, 45%)` }}>
+                ⚠ 今日钠盐已超标！超标{todaySodium - 2000}mg，建议每日不超过2000mg（约5g食盐）
+              </p>
+            ) : todaySodium > 1500 ? (
+              <p className="text-xs mt-2" style={{ color: `hsl(35, 70%, 45%)` }}>
+                今日钠盐接近上限，注意控制后续饮食
+              </p>
             ) : todaySodium > 0 ? (
               <p className="text-xs text-gray-500 mt-2">每日建议摄入量不超过2000mg（约5g食盐）</p>
             ) : (

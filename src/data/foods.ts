@@ -116,6 +116,27 @@ export const FOOD_DATABASE: FoodItem[] = [
   { id: 'biscuit', name: '饼干', category: '零食', caloriesPer100g: 433, proteinPer100g: 7.0, carbsPer100g: 70.0, fatPer100g: 14.0, sodiumPer100g: 300 },
 ];
 
+// 烹饪方式定义：不同烹饪方式对热量和钠盐的影响（每100g食材）
+// 热量增幅：烹饪用油/糖带来的额外热量
+// 额外钠盐：盐、酱油等调味料带来的额外钠（mg/100g）
+export interface CookingMethod {
+  id: string;
+  label: string;
+  calorieMultiplier: number; // 热量倍率（1.0=不变，1.15=增加15%）
+  extraSodiumPer100g: number; // 额外钠盐 mg/100g
+}
+
+export const COOKING_METHODS: CookingMethod[] = [
+  { id: 'raw', label: '生食/凉菜', calorieMultiplier: 1.0, extraSodiumPer100g: 80 },
+  { id: 'boil', label: '水煮/焯水', calorieMultiplier: 1.0, extraSodiumPer100g: 120 },
+  { id: 'steam', label: '清蒸', calorieMultiplier: 1.0, extraSodiumPer100g: 150 },
+  { id: 'stir_fry', label: '炒', calorieMultiplier: 1.15, extraSodiumPer100g: 350 },
+  { id: 'pan_fry', label: '煎', calorieMultiplier: 1.20, extraSodiumPer100g: 280 },
+  { id: 'deep_fry', label: '炸', calorieMultiplier: 1.45, extraSodiumPer100g: 200 },
+  { id: 'braise', label: '红烧/卤', calorieMultiplier: 1.10, extraSodiumPer100g: 500 },
+  { id: 'grill', label: '烤', calorieMultiplier: 1.05, extraSodiumPer100g: 250 },
+];
+
 // 搜索食物：支持名称模糊匹配
 export function searchFoods(query: string, limit = 10): FoodItem[] {
   if (!query.trim()) return [];
@@ -125,14 +146,17 @@ export function searchFoods(query: string, limit = 10): FoodItem[] {
     .slice(0, limit);
 }
 
-// 根据重量计算营养（食物 + 重量g）
-export function calculateNutrition(food: FoodItem, weightGrams: number) {
+// 根据食材 + 重量 + 烹饪方式计算营养
+// 钠盐 = 食材自带钠 × (重量/100) + 烹饪方式额外钠 × (重量/100)
+export function calculateNutrition(food: FoodItem, weightGrams: number, cookingMethod?: CookingMethod) {
   const ratio = weightGrams / 100;
+  const extraSodium = cookingMethod ? cookingMethod.extraSodiumPer100g * ratio : 0;
+  const calorieMult = cookingMethod ? cookingMethod.calorieMultiplier : 1.0;
   return {
-    calories: Math.round(food.caloriesPer100g * ratio),
+    calories: Math.round(food.caloriesPer100g * ratio * calorieMult),
     protein: Math.round(food.proteinPer100g * ratio * 10) / 10,
     carbs: Math.round(food.carbsPer100g * ratio * 10) / 10,
-    fat: Math.round(food.fatPer100g * ratio * 10) / 10,
-    sodium: Math.round(food.sodiumPer100g * ratio),
+    fat: Math.round(food.fatPer100g * ratio * calorieMult * 10) / 10,
+    sodium: Math.round(food.sodiumPer100g * ratio + extraSodium),
   };
 }

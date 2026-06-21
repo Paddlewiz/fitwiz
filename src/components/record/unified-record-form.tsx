@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Scale, UtensilsCrossed, Activity, Plus, Save, Footprints, Search, Dumbbell } from 'lucide-react';
 import { StepsSync as StepsSyncComponent } from '@/components/steps';
-import { FOOD_DATABASE, FoodItem, searchFoods, calculateNutrition } from '@/data/foods';
+import { FOOD_DATABASE, FoodItem, searchFoods, calculateNutrition, COOKING_METHODS, CookingMethod } from '@/data/foods';
 
 // ============ 身体数据表单 ============
 export interface BodyData {
@@ -176,6 +176,7 @@ export interface DietRecord {
 
 export function DietForm({ onSave }: { onSave: (data: DietRecord) => void }) {
   const { t } = useI18n();
+  const [selectedCookingMethod, setSelectedCookingMethod] = useState<CookingMethod | null>(null);
   const [formData, setFormData] = useState<DietRecord>({
     foodName: '',
     calories: 0,
@@ -212,14 +213,14 @@ export function DietForm({ onSave }: { onSave: (data: DietRecord) => void }) {
     setSelectedFood(food);
     setSearchQuery(food.name);
     setShowResults(false);
-    // 按当前重量自动计算
-    updateNutrition(food, formData.portionSize || 100);
+    // 按当前重量和烹饪方式自动计算
+    updateNutrition(food, formData.portionSize || 100, selectedCookingMethod);
   };
 
-  // 更新营养（根据食物和重量）
-  const updateNutrition = (food: FoodItem | null, weight: number) => {
+  // 更新营养（根据食物、重量和烹饪方式）
+  const updateNutrition = (food: FoodItem | null, weight: number, cookingMethod?: CookingMethod | null) => {
     if (!food || weight <= 0) return;
-    const nutrition = calculateNutrition(food, weight);
+    const nutrition = calculateNutrition(food, weight, cookingMethod || undefined);
     setFormData(prev => ({
       ...prev,
       foodName: food.name,
@@ -235,7 +236,7 @@ export function DietForm({ onSave }: { onSave: (data: DietRecord) => void }) {
   const handleWeightChange = (weight: number) => {
     setFormData(prev => ({ ...prev, portionSize: weight }));
     if (selectedFood) {
-      updateNutrition(selectedFood, weight);
+      updateNutrition(selectedFood, weight, selectedCookingMethod);
     }
   };
 
@@ -256,6 +257,7 @@ export function DietForm({ onSave }: { onSave: (data: DietRecord) => void }) {
       });
       setSearchQuery('');
       setSelectedFood(null);
+      setSelectedCookingMethod(null);
     }
   };
 
@@ -350,6 +352,33 @@ export function DietForm({ onSave }: { onSave: (data: DietRecord) => void }) {
             />
             <p className="text-xs text-gray-400 mt-0.5">输入实际重量后自动计算营养</p>
           </div>
+
+          {/* 烹饪方式 */}
+          {selectedFood && (
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-1 block">烹饪方式</label>
+              <Select
+                value={selectedCookingMethod?.id || ''}
+                onValueChange={(value) => {
+                  const method = COOKING_METHODS.find(m => m.id === value);
+                  setSelectedCookingMethod(method || null);
+                  if (method && selectedFood) {
+                    updateNutrition(selectedFood, formData.portionSize || 100, method);
+                  }
+                }}
+              >
+                <SelectTrigger className="border-teal-200">
+                  <SelectValue placeholder="选择烹饪方式" />
+                </SelectTrigger>
+                <SelectContent>
+                  {COOKING_METHODS.map(m => (
+                    <SelectItem key={m.id} value={m.id}>{m.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-gray-400 mt-0.5">不同烹饪方式影响热量和钠盐摄入</p>
+            </div>
+          )}
 
           {/* 营养数据（自动计算，可手动修改） */}
           <div className="grid grid-cols-2 gap-3">
@@ -446,7 +475,7 @@ interface ExerciseTypeDef {
   label: string;
   mode: 'time' | 'quantity';
   caloriesPerMin?: number; // 按时间模式的每分钟消耗
-  caloriesPerSet?: number; // 按数量模式的每组消耗
+  caloriesPerRep?: number; // 按数量模式的每次动作消耗（基于METs研究数据，70kg体重参考）
   hasWeight?: boolean; // 是否支持负重
 }
 
@@ -466,16 +495,19 @@ const EXERCISE_TYPES: ExerciseTypeDef[] = [
   { id: 'elliptical', label: '椭圆机', mode: 'time', caloriesPerMin: 7 },
   { id: 'rowing_machine', label: '划船机', mode: 'time', caloriesPerMin: 8 },
   // 力量训练（按数量）
-  { id: 'deadlift', label: '硬拉', mode: 'quantity', caloriesPerSet: 8, hasWeight: true },
-  { id: 'squat', label: '深蹲', mode: 'quantity', caloriesPerSet: 7, hasWeight: true },
-  { id: 'bench_press', label: '卧推', mode: 'quantity', caloriesPerSet: 6, hasWeight: true },
-  { id: 'barbell_row', label: '杠铃划船', mode: 'quantity', caloriesPerSet: 6, hasWeight: true },
-  { id: 'shoulder_press', label: '推举', mode: 'quantity', caloriesPerSet: 5, hasWeight: true },
-  { id: 'pull_up', label: '引体向上', mode: 'quantity', caloriesPerSet: 8 },
-  { id: 'lat_pulldown', label: '高位下拉', mode: 'quantity', caloriesPerSet: 5, hasWeight: true },
-  { id: 'leg_press', label: '腿举', mode: 'quantity', caloriesPerSet: 7, hasWeight: true },
-  { id: 'bicep_curl', label: '二头弯举', mode: 'quantity', caloriesPerSet: 4, hasWeight: true },
-  { id: 'tricep_pushdown', label: '三头下压', mode: 'quantity', caloriesPerSet: 4, hasWeight: true },
+  // caloriesPerRep基于METs研究数据反推（70kg体重参考）
+  // 数据来源：中国体育科学学会T/CSSS 002-2023、日本国立健康・营养研究所METs表
+  { id: 'deadlift', label: '硬拉', mode: 'quantity', caloriesPerRep: 0.40, hasWeight: true },
+  { id: 'squat', label: '深蹲', mode: 'quantity', caloriesPerRep: 0.35, hasWeight: true },
+  { id: 'bench_press', label: '卧推', mode: 'quantity', caloriesPerRep: 0.35, hasWeight: true },
+  { id: 'barbell_row', label: '杠铃划船', mode: 'quantity', caloriesPerRep: 0.30, hasWeight: true },
+  { id: 'shoulder_press', label: '推举', mode: 'quantity', caloriesPerRep: 0.30, hasWeight: true },
+  { id: 'pull_up', label: '引体向上', mode: 'quantity', caloriesPerRep: 1.0 },
+  { id: 'lat_pulldown', label: '高位下拉', mode: 'quantity', caloriesPerRep: 0.25, hasWeight: true },
+  { id: 'leg_press', label: '腿举', mode: 'quantity', caloriesPerRep: 0.35, hasWeight: true },
+  { id: 'bicep_curl', label: '二头弯举', mode: 'quantity', caloriesPerRep: 0.15, hasWeight: true },
+  { id: 'tricep_pushdown', label: '三头下压', mode: 'quantity', caloriesPerRep: 0.15, hasWeight: true },
+  { id: 'push_up', label: '俯卧撑', mode: 'quantity', caloriesPerRep: 0.35 },
   { id: 'plank', label: '平板支撑', mode: 'time', caloriesPerMin: 4 },
   // 通用
   { id: 'gym_other', label: '健身房（其他）', mode: 'time', caloriesPerMin: 6 },
@@ -513,15 +545,16 @@ export function ExerciseForm({ onSave }: { onSave: (data: ExerciseRecord) => voi
   };
 
   // 计算消耗热量
+  // 力量训练公式：总消耗 = caloriesPerRep × sets × reps × (1 + 外部负重kg × 0.02)
+  // 每kg外部负重增加2%消耗（50kg=+100%，100kg=+200%）
   const calculateCalories = (): number => {
     if (!selectedType) return 0;
     if (selectedType.mode === 'time') {
       return (selectedType.caloriesPerMin || 5) * (formData.duration || 0);
     } else {
-      // 按数量：每组消耗 × 组数
-      const baseCalories = (selectedType.caloriesPerSet || 5) * (formData.sets || 0);
-      // 如果有负重，加权（负重越高消耗越大，每10kg加5%）
-      const weightBonus = formData.weight ? Math.min(formData.weight / 10 * 0.05, 0.5) : 0;
+      // 按数量：每次动作消耗 × 组数 × 次数 × (1 + 外部负重kg × 0.02)
+      const baseCalories = (selectedType.caloriesPerRep || 0.3) * (formData.sets || 0) * (formData.reps || 0);
+      const weightBonus = formData.weight ? formData.weight * 0.02 : 0;
       return Math.round(baseCalories * (1 + weightBonus));
     }
   };
@@ -537,27 +570,37 @@ export function ExerciseForm({ onSave }: { onSave: (data: ExerciseRecord) => voi
     });
   };
 
-  // 组数/次数变化
+  // 组数变化 → 重新计算消耗
   const handleSetsChange = (sets: number) => {
     const newFormData = { ...formData, sets };
     const selected = EXERCISE_TYPES.find(e => e.label === formData.exerciseType);
-    const baseCalories = (selected?.caloriesPerSet || 5) * sets;
-    const weightBonus = formData.weight ? Math.min(formData.weight / 10 * 0.05, 0.5) : 0;
-    newFormData.caloriesBurned = Math.round(baseCalories * (1 + weightBonus));
+    if (selected?.mode === 'quantity') {
+      const baseCalories = (selected.caloriesPerRep || 0.3) * sets * (formData.reps || 0);
+      const weightBonus = formData.weight ? formData.weight * 0.02 : 0;
+      newFormData.caloriesBurned = Math.round(baseCalories * (1 + weightBonus));
+    }
     setFormData(newFormData);
   };
 
+  // 次数变化 → 重新计算消耗
   const handleRepsChange = (reps: number) => {
-    setFormData({ ...formData, reps });
-  };
-
-  const handleWeightChange = (weight: number) => {
-    const newFormData = { ...formData, weight };
-    // 重新计算
+    const newFormData = { ...formData, reps };
     const selected = EXERCISE_TYPES.find(e => e.label === formData.exerciseType);
     if (selected?.mode === 'quantity') {
-      const baseCalories = (selected.caloriesPerSet || 5) * (formData.sets || 0);
-      const weightBonus = weight ? Math.min(weight / 10 * 0.05, 0.5) : 0;
+      const baseCalories = (selected.caloriesPerRep || 0.3) * (formData.sets || 0) * reps;
+      const weightBonus = formData.weight ? formData.weight * 0.02 : 0;
+      newFormData.caloriesBurned = Math.round(baseCalories * (1 + weightBonus));
+    }
+    setFormData(newFormData);
+  };
+
+  // 负重变化 → 重新计算消耗
+  const handleWeightChange = (weight: number) => {
+    const newFormData = { ...formData, weight };
+    const selected = EXERCISE_TYPES.find(e => e.label === formData.exerciseType);
+    if (selected?.mode === 'quantity') {
+      const baseCalories = (selected.caloriesPerRep || 0.3) * (formData.sets || 0) * (formData.reps || 0);
+      const weightBonus = weight ? weight * 0.02 : 0;
       newFormData.caloriesBurned = Math.round(baseCalories * (1 + weightBonus));
     }
     setFormData(newFormData);
