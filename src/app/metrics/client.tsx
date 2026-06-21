@@ -20,6 +20,7 @@ interface BodyMetric {
   body_fat_pct: string | null;
   bmi: string | null;
   body_age: number | null;
+  bmr: number | null;
   visceral_fat: number | null;
   muscle_mass: string | null;
   bone_mass: string | null;
@@ -45,6 +46,7 @@ export function MetricsPageClient() {
   const [muscleMass, setMuscleMass] = useState('');
   const [boneMass, setBoneMass] = useState('');
   const [waterPct, setWaterPct] = useState('');
+  const [bmr, setBmr] = useState('');
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -131,6 +133,7 @@ export function MetricsPageClient() {
         body_fat_pct: bodyFatPct || null,
         bmi: bmi || null,
         body_age: bodyAge ? parseInt(bodyAge) : null,
+        bmr: bmr ? parseInt(bmr) : null,
         visceral_fat: visceralFat ? parseInt(visceralFat) : null,
         muscle_mass: muscleMass || null,
         bone_mass: boneMass || null,
@@ -272,6 +275,16 @@ export function MetricsPageClient() {
                   />
                 </div>
                 <div className="space-y-2">
+                  <Label htmlFor="bmr">{t('metrics.bmr') || '基础代谢率'}</Label>
+                  <Input
+                    id="bmr"
+                    type="number"
+                    value={bmr}
+                    onChange={(e) => setBmr(e.target.value)}
+                    placeholder="1500"
+                  />
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="visceralFat">{t('metrics.visceralFat')}</Label>
                   <Input
                     id="visceralFat"
@@ -384,7 +397,7 @@ export function MetricsPageClient() {
 
         {/* Current Stats */}
         {latestMetric && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
             <Card className="shadow-sm bg-teal-50 border-teal-100">
               <CardContent className="p-4 text-center">
                 <p className="text-sm text-teal-600 mb-1">{t('metrics.weight')}</p>
@@ -407,6 +420,18 @@ export function MetricsPageClient() {
               <CardContent className="p-4 text-center">
                 <p className="text-sm text-blue-600 mb-1">{t('metrics.muscleMass')}</p>
                 <p className="text-2xl font-bold text-blue-700">{latestMetric.muscle_mass || '-'} kg</p>
+              </CardContent>
+            </Card>
+            <Card className="shadow-sm bg-purple-50 border-purple-100">
+              <CardContent className="p-4 text-center">
+                <p className="text-sm text-purple-600 mb-1">{t('metrics.bmr') || '基础代谢率'}</p>
+                <p className="text-2xl font-bold text-purple-700">{latestMetric.bmr || '-'} kcal</p>
+              </CardContent>
+            </Card>
+            <Card className="shadow-sm bg-pink-50 border-pink-100">
+              <CardContent className="p-4 text-center">
+                <p className="text-sm text-pink-600 mb-1">{t('metrics.bodyAge')}</p>
+                <p className="text-2xl font-bold text-pink-700">{latestMetric.body_age || '-'} 岁</p>
               </CardContent>
             </Card>
           </div>

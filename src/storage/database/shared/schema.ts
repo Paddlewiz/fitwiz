@@ -44,6 +44,7 @@ export const bodyMetrics = pgTable(
 		muscle_mass: numeric("muscle_mass", { precision: 5, scale: 2 }), // kg
 		bone_mass: numeric("bone_mass", { precision: 4, scale: 2 }), // kg
 		water_pct: numeric("water_pct", { precision: 4, scale: 1 }), // percentage
+		bmr: integer("bmr"), // 基础代谢率（手动输入或设备测量）
 		notes: text("notes"),
 		created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 	},
@@ -68,6 +69,7 @@ export const dietLogs = pgTable(
 		protein: numeric("protein", { precision: 5, scale: 1 }), // grams
 		carbs: numeric("carbs", { precision: 5, scale: 1 }), // grams
 		fat: numeric("fat", { precision: 5, scale: 1 }), // grams
+		sodium_mg: integer("sodium_mg"), // 钠盐摄入量 mg
 		notes: text("notes"),
 		created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 	},
@@ -86,10 +88,13 @@ export const exerciseLogs = pgTable(
 		user_id: uuid("user_id").notNull().default(sql`auth.uid()`),
 		date: date("date").notNull(),
 		exercise_type: varchar("exercise_type", { length: 50 }).notNull(), // 'running', 'walking', 'swimming', etc.
-		duration_minutes: integer("duration_minutes").notNull(),
+		duration_minutes: integer("duration_minutes"), // 分钟（按时间模式）
 		calories_burned: integer("calories_burned"),
 		distance_km: numeric("distance_km", { precision: 5, scale: 2 }),
 		intensity: varchar("intensity", { length: 20 }), // 'low', 'moderate', 'high'
+		weight_kg: numeric("weight_kg", { precision: 6, scale: 2 }), // 负重重量（力量训练）
+		sets: integer("sets"), // 组数（按数量模式）
+		reps: integer("reps"), // 每组次数（按数量模式）
 		notes: text("notes"),
 		created_at: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 	},

@@ -73,12 +73,10 @@ export function StepsSync({ onSave, initialSteps = 0 }: StepsSyncProps) {
     return Math.round(stepCount * 0.04);
   }, []);
 
-  // Handle steps change
+  // Handle steps change (only updates display state, does NOT auto-save)
   const handleStepsChange = useCallback((newSteps: number) => {
     setSteps(newSteps);
-    const calories = calculateCalories(newSteps);
-    onSave?.(newSteps, calories);
-  }, [calculateCalories, onSave]);
+  }, []);
 
   // Stop tracking
   const stopTracking = useCallback(() => {

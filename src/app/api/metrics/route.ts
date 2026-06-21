@@ -1,25 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
+function formatDate(dateStr: string) {
+  const date = new Date(dateStr);
+  return `${date.getMonth() + 1}/${date.getDate()}`;
+}
+
 // GET /api/metrics - Get user's body metrics, diet logs, and exercise logs
 export async function GET(request: NextRequest) {
   try {
-    // Get session token from header
     const sessionToken = request.headers.get('x-session');
-    
     if (!sessionToken) {
       return NextResponse.json({ error: '未登录' }, { status: 401 });
     }
 
-    // Get Supabase credentials
     const supabaseUrl = process.env.COZE_SUPABASE_URL;
     const supabaseKey = process.env.COZE_SUPABASE_ANON_KEY;
-    
     if (!supabaseUrl || !supabaseKey) {
       return NextResponse.json({ error: '数据库配置错误' }, { status: 500 });
     }
 
-    // Create Supabase client with user's session
     const supabase = createClient(supabaseUrl, supabaseKey, {
       global: {
         headers: {
@@ -28,17 +28,14 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // Get user info
     const { data: { user }, error: userError } = await supabase.auth.getUser(sessionToken);
     if (userError || !user) {
       return NextResponse.json({ error: '会话无效' }, { status: 401 });
     }
 
-    // Get today's date
     const today = new Date();
     const todayStr = today.toISOString().split('T')[0];
 
-    // Get last 7 days dates
     const last7Days: string[] = [];
     for (let i = 6; i >= 0; i--) {
       const d = new Date();
@@ -46,7 +43,7 @@ export async function GET(request: NextRequest) {
       last7Days.push(d.toISOString().split('T')[0]);
     }
 
-    // Query body_metrics (uses recorded_at, not date)
+    // Query body_metrics
     const { data: metrics, error: metricsError } = await supabase
       .from('body_metrics')
       .select('*')
@@ -84,6 +81,22 @@ export async function GET(request: NextRequest) {
       console.error('Exercise logs query error:', exerciseError);
     }
 
+    // Try to get today's sodium (separate query, safe if column doesn't exist yet)
+    let todaySodium = 0;
+    try {
+      const { data: sodiumData } = await supabase
+        .from('diet_logs')
+        .select('sodium_mg')
+        .eq('user_id', user.id)
+        .eq('date', todayStr);
+      
+      if (sodiumData) {
+        todaySodium = sodiumData.reduce((sum: number, log: any) => sum + (log.sodium_mg || 0), 0);
+      }
+    } catch (e) {
+      // sodium_mg column might not exist yet, default to 0
+    }
+
     // Aggregate diet data by date
     const dietByDate: Record<string, { calories: number; protein: number }> = {};
     (dietLogs || []).forEach(log => {
@@ -105,13 +118,21 @@ export async function GET(request: NextRequest) {
       exerciseByDate[date] += log.calories_burned || 0;
     });
 
-    // Build daily summary for last 7 days
-    const dailySummary = last7Days.map(date => ({
-      date,
-      intakeCalories: dietByDate[date]?.calories || 0,
-      intakeProtein: dietByDate[date]?.protein || 0,
-      exerciseBurn: exerciseByDate[date] || 0,
-    }));
+    // Build weekly calorie data (field names match dashboard expectations)
+    const weeklyCalorieData = last7Days.map(date => {
+      const intake = dietByDate[date]?.calories || 0;
+      const exercise = exerciseByDate[date] || 0;
+      return {
+        date,
+        displayDate: formatDate(date),
+        intake,
+        target: 0,
+        deficit: exercise - intake,
+        balance: exercise - intake,
+        exerciseBurn: exercise,
+        protein: dietByDate[date]?.protein || 0,
+      };
+    });
 
     // Today's summary
     const todayDiet = dietByDate[todayStr] || { calories: 0, protein: 0 };
@@ -119,16 +140,22 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       metrics: metrics || [],
-      dailySummary,
-      today: {
-        date: todayStr,
-        intakeCalories: todayDiet.calories,
-        intakeProtein: todayDiet.protein,
-        exerciseBurn: todayExercise,
-      },
+      weeklyCalorieData,
+      todayIntake: todayDiet.calories,
+      todayProtein: todayDiet.protein,
+      todayExercise: todayExercise,
+      todaySodium: todaySodium,
     });
   } catch (error) {
     console.error('API error:', error);
-    return NextResponse.json({ error: '服务器错误', metrics: [], dailySummary: [], today: null }, { status: 500 });
+    return NextResponse.json({
+      error: '服务器错误',
+      metrics: [],
+      weeklyCalorieData: [],
+      todayIntake: 0,
+      todayProtein: 0,
+      todayExercise: 0,
+      todaySodium: 0,
+    }, { status: 500 });
   }
 }

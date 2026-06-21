@@ -21,6 +21,8 @@ interface TodayDietLog {
   protein: number;
   carbs: number;
   fat: number;
+  portion_size?: number;
+  sodium_mg?: number;
   created_at: string;
 }
 
@@ -30,6 +32,9 @@ interface TodayExerciseLog {
   duration: number;
   calories_burned: number;
   steps?: number;
+  weight_kg?: number;
+  sets?: number;
+  reps?: number;
   created_at: string;
 }
 
@@ -174,6 +179,7 @@ export function RecordPageClient() {
         body_fat: data.bodyFat,
         bmi: bmi,
         body_age: data.bodyAge,
+        bmr: data.bmr,
         visceral_fat: data.visceralFat,
         muscle_mass: data.muscleMass,
         bone_mass: data.boneMass,
@@ -251,6 +257,9 @@ export function RecordPageClient() {
         duration: data.duration,
         calories_burned: data.caloriesBurned,
         steps: data.steps,
+        weight_kg: data.weight || null,
+        sets: data.sets || null,
+        reps: data.reps || null,
         created_at: new Date().toISOString(),
       });
 
@@ -421,7 +430,7 @@ export function RecordPageClient() {
                       <div>
                         <p className="font-medium text-gray-900 text-sm">{log.food_name}</p>
                         <p className="text-xs text-gray-500">
-                          {log.calories} kcal · {log.protein}g蛋白
+                          {log.portion_size ? `${log.portion_size}g · ` : ''}{log.calories} kcal · {log.protein}g蛋白
                         </p>
                       </div>
                     </div>
@@ -465,6 +474,8 @@ export function RecordPageClient() {
                       <div className="text-xs text-gray-500">
                         {log.steps ? (
                           <span>{log.steps}步 · {log.calories_burned}kcal</span>
+                        ) : log.sets ? (
+                          <span>{log.sets}组×{log.reps || 0}次{log.weight_kg ? ` · ${log.weight_kg}kg` : ''} · {log.calories_burned}kcal</span>
                         ) : (
                           <span>{log.duration}分钟 · {log.calories_burned}kcal</span>
                         )}

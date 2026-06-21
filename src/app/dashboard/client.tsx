@@ -113,6 +113,7 @@ export default function DashboardClient() {
   const [todayIntake, setTodayIntake] = useState(0);
   const [todayProtein, setTodayProtein] = useState(0);
   const [todayExercise, setTodayExercise] = useState(0);
+  const [todaySodium, setTodaySodium] = useState(0);
   const [weeklyCalorieData, setWeeklyCalorieData] = useState<DailyCalorieData[]>([]);
   
   // Ref to track if data fetch is in progress
@@ -202,6 +203,7 @@ export default function DashboardClient() {
           setTodayIntake(metricsResult.todayIntake || 0);
           setTodayProtein(metricsResult.todayProtein || 0);
           setTodayExercise(metricsResult.todayExercise || 0);
+          setTodaySodium(metricsResult.todaySodium || 0);
           setWeeklyCalorieData((metricsResult.weeklyCalorieData || []).map((d: DailyCalorieData) => ({
             ...d,
             balance: d.balance ?? d.deficit ?? 0,
@@ -422,6 +424,36 @@ export default function DashboardClient() {
           exerciseTarget={exerciseTarget}
           showRecordButton={true}
         />
+        
+        {/* 钠盐摄入监控 */}
+        <Card className="bg-white shadow-sm">
+          <CardContent className="p-4">
+            <div className="flex justify-between items-center mb-2">
+              <h3 className="text-sm font-semibold text-gray-800 flex items-center gap-1.5">
+                <span className="text-base">🧂</span>
+                钠盐摄入
+              </h3>
+              <span className={`text-sm font-medium ${todaySodium > 2000 ? 'text-red-600' : todaySodium > 1500 ? 'text-orange-500' : 'text-teal-600'}`}>
+                {todaySodium} / 2000 mg
+              </span>
+            </div>
+            <div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-500 ${
+                  todaySodium > 2000 ? 'bg-red-500' : todaySodium > 1500 ? 'bg-orange-500' : 'bg-teal-500'
+                }`}
+                style={{ width: `${Math.min((todaySodium / 2000) * 100, 100)}%` }}
+              />
+            </div>
+            {todaySodium > 2000 ? (
+              <p className="text-xs text-red-500 mt-2">⚠ 今日钠盐已超标！建议每日摄入不超过2000mg（约5g食盐）</p>
+            ) : todaySodium > 0 ? (
+              <p className="text-xs text-gray-500 mt-2">每日建议摄入量不超过2000mg（约5g食盐）</p>
+            ) : (
+              <p className="text-xs text-gray-400 mt-2">记录饮食后自动统计钠盐摄入</p>
+            )}
+          </CardContent>
+        </Card>
         
         {/* Stats Cards */}
         {currentWeight && (
