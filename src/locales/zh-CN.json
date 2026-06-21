@@ -311,7 +311,10 @@
     "noData": "暂无数据",
     "pleaseLogin": "请先登录",
     "saveFailed": "保存失败",
-    "deleteFailed": "删除失败"
+    "deleteFailed": "删除失败",
+    "loadingSlow": "加载较慢",
+    "loadingSlowHint": "网络连接可能不稳定，请点击重试或稍后再试",
+    "record": "记录"
   },
   "lang": {
     "zh": "中文",

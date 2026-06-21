@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useI18n } from '@/lib/i18n-context';
 import { useOnboarding } from '@/lib/onboarding-context';
 import { useRouter } from 'next/navigation';
@@ -8,7 +8,7 @@ import dynamic from 'next/dynamic';
 import { getSupabaseBrowserClient } from '@/lib/supabase-browser';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Plus, Scale, Calculator, BarChart3, ArrowRight, RefreshCw } from 'lucide-react';
+import { Plus, Scale, Calculator, BarChart3, ArrowRight, RefreshCw, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 
 // Dynamically import ALL components to avoid SSR issues
@@ -61,6 +61,7 @@ interface DailyCalorieData {
   intake: number;
   target: number;
   deficit: number;
+  balance: number; // alias for deficit, for CalorieBalanceChart compatibility
   exerciseBurn?: number;
   protein?: number;
 }
@@ -71,19 +72,35 @@ const formatDate = (dateStr: string) => {
   return `${date.getMonth() + 1}/${date.getDate()}`;
 };
 
-// Helper function to get date string for comparison
-const getDateString = (date: Date) => {
-  return date.toISOString().split('T')[0];
+// Timeout helper
+const withTimeout = <T,>(promise: Promise<T>, ms: number): Promise<T> => {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(`Timeout after ${ms}ms`)), ms);
+    promise
+      .then(result => {
+        clearTimeout(timer);
+        resolve(result);
+      })
+      .catch(error => {
+        clearTimeout(timer);
+        reject(error);
+      });
+  });
 };
+
+// Get supabase client once (singleton pattern)
+const supabaseClient = getSupabaseBrowserClient();
 
 export default function DashboardClient() {
   const { t } = useI18n();
   const router = useRouter();
   const { isCompleted, data: onboardingData, restartOnboarding } = useOnboarding();
+  
   const [metrics, setMetrics] = useState<BodyMetric[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
   
   // Profile data
   const [profileData, setProfileData] = useState<{
@@ -101,10 +118,11 @@ export default function DashboardClient() {
   const [todayExercise, setTodayExercise] = useState(0);
   const [weeklyCalorieData, setWeeklyCalorieData] = useState<DailyCalorieData[]>([]);
   
-  const supabase = getSupabaseBrowserClient();
+  // Ref to track if data fetch is in progress
+  const fetchingRef = useRef(false);
   
   // Calculate TDEE from user profile (if available)
-  const calculateTDEE = useCallback(() => {
+  const calculateTDEE = () => {
     const weight = metrics.length > 0 ? metrics[0].weight : onboardingData.currentWeight;
     const height = profileData.height || onboardingData.height;
     const age = profileData.age || onboardingData.age;
@@ -134,69 +152,115 @@ export default function DashboardClient() {
     
     const multiplier = activityMultipliers[activityLevel] || 1.55;
     return Math.round(bmr * multiplier);
-  }, [metrics, profileData, onboardingData]);
+  };
   
-  // Check authentication and fetch data
+  // Check authentication and fetch data - run only once on mount
   useEffect(() => {
+    // Prevent duplicate fetches
+    if (fetchingRef.current) return;
+    fetchingRef.current = true;
+    
     const fetchData = async () => {
       try {
-        // Check session
-        const { data: { session } } = await supabase.auth.getSession();
+        setLoading(true);
+        setLoadingTimeout(false);
+        
+        // Check session with timeout (3 seconds)
+        const sessionResult = await withTimeout(
+          supabaseClient.auth.getSession(),
+          3000
+        );
+        
+        const { session } = sessionResult.data;
         
         if (!session) {
+          // Not authenticated - redirect to login after 1 second
           setIsAuthenticated(false);
           setLoading(false);
+          // Delay redirect to show message briefly
+          setTimeout(() => {
+            router.push('/login');
+          }, 1000);
           return;
         }
         
         setIsAuthenticated(true);
         
-        // Fetch metrics data (includes diet_logs and exercise_logs)
-        const metricsResponse = await fetch('/api/metrics', {
+        // Fetch metrics data with timeout
+        const metricsPromise = fetch('/api/metrics', {
           headers: {
             'x-session': session.access_token,
           },
         });
+        
+        const metricsResponse = await withTimeout(metricsPromise, 5000);
         
         if (metricsResponse.ok) {
           const metricsResult = await metricsResponse.json();
           setMetrics(metricsResult.metrics || []);
-          
-          // Set today's actual data from API response (NO MOCK DATA)
           setTodayIntake(metricsResult.todayIntake || 0);
           setTodayProtein(metricsResult.todayProtein || 0);
           setTodayExercise(metricsResult.todayExercise || 0);
-          setWeeklyCalorieData(metricsResult.weeklyCalorieData || []);
+          setWeeklyCalorieData((metricsResult.weeklyCalorieData || []).map((d: DailyCalorieData) => ({
+            ...d,
+            balance: d.balance ?? d.deficit ?? 0,
+          })));
+        } else {
+          console.warn('Metrics API returned non-OK status:', metricsResponse.status);
         }
         
-        // Fetch user profile for target weight and TDEE calculation
-        const profileResponse = await fetch('/api/profile', {
+        // Fetch user profile with timeout
+        const profilePromise = fetch('/api/profile', {
           headers: {
             'x-session': session.access_token,
           },
         });
         
+        const profileResponse = await withTimeout(profilePromise, 5000);
+        
         if (profileResponse.ok) {
           const profileResult = await profileResponse.json();
           setProfileData(profileResult.profile || {});
+        } else {
+          console.warn('Profile API returned non-OK status:', profileResponse.status);
         }
         
       } catch (err) {
         console.error('Error fetching data:', err);
-        setError(t('common.error'));
+        
+        // Check if it's a timeout error
+        if (err instanceof Error && err.message.includes('Timeout')) {
+          setLoadingTimeout(true);
+        } else {
+          setError(t('common.error'));
+        }
       } finally {
         setLoading(false);
       }
     };
     
     fetchData();
-  }, [supabase, t]);
+    
+    // Cleanup - reset fetching ref if component unmounts
+    return () => {
+      fetchingRef.current = false;
+    };
+  }, []); // Empty deps - run only once on mount
+  
+  // Handle retry
+  const handleRetry = () => {
+    fetchingRef.current = false;
+    setError(null);
+    setLoadingTimeout(false);
+    setLoading(true);
+    // Re-trigger the effect by setting state
+    // The effect will run again because we reset the ref
+  };
   
   // Prepare chart data from actual metrics
-  const prepareChartData = useCallback(() => {
+  const prepareChartData = () => {
     if (metrics.length === 0) return [];
     
-    // Sort by date ascending
     const sortedMetrics = [...metrics].sort((a, b) => 
       new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
     );
@@ -206,7 +270,7 @@ export default function DashboardClient() {
       displayDate: formatDate(metric.created_at),
       weight: metric.weight,
     }));
-  }, [metrics]);
+  };
   
   // Get current weight from latest metric or onboarding data
   const currentWeight = metrics.length > 0 
@@ -226,7 +290,7 @@ export default function DashboardClient() {
   // Target weight from profile or onboarding
   const targetWeight = profileData.target_weight || onboardingData.targetWeight;
   const startWeight = onboardingData.currentWeight || (metrics.length > 0 
-    ? metrics.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())[0].weight 
+    ? metrics.sort((a, b) => new Date(a.created_at).getTime() - new Date(a.created_at).getTime())[0].weight 
     : undefined);
   
   // Calculate targets based on TDEE
@@ -238,14 +302,46 @@ export default function DashboardClient() {
   const energyDeficitTarget = Math.max(0, tdee - targetCalories); // Daily deficit target
   const exerciseTarget = 300; // Standard exercise burn target
   
-  // Loading state
+  // Loading state with timeout indicator
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
         <div className="text-center">
           <RefreshCw className="w-8 h-8 text-teal-600 animate-spin mx-auto mb-4" />
           <p className="text-gray-600">{t('common.loading')}</p>
+          {/* Show timeout button after 3 seconds */}
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="mt-4 opacity-0 animate-[fadeIn_3s_forwards]"
+            onClick={handleRetry}
+          >
+            {t('common.retry')}
+          </Button>
         </div>
+      </div>
+    );
+  }
+  
+  // Loading timeout state
+  if (loadingTimeout) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+        <Card className="max-w-md w-full bg-white shadow-lg">
+          <CardContent className="p-6 text-center">
+            <AlertCircle className="w-12 h-12 text-orange-500 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold text-gray-800 mb-2">
+              {t('common.loadingSlow')}
+            </h2>
+            <p className="text-gray-600 mb-6">
+              {t('common.loadingSlowHint')}
+            </p>
+            <Button onClick={handleRetry} className="w-full bg-teal-600 hover:bg-teal-700">
+              <RefreshCw className="w-4 h-4 mr-2" />
+              {t('common.retry')}
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -279,10 +375,12 @@ export default function DashboardClient() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
         <Card className="max-w-md w-full bg-white shadow-lg">
           <CardContent className="p-6 text-center">
+            <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
             <h2 className="text-xl font-semibold text-red-600 mb-4">
               {t('common.error')}
             </h2>
-            <Button onClick={() => window.location.reload()} className="bg-teal-600 hover:bg-teal-700">
+            <Button onClick={handleRetry} className="bg-teal-600 hover:bg-teal-700">
+              <RefreshCw className="w-4 h-4 mr-2" />
               {t('common.retry')}
             </Button>
           </CardContent>
@@ -291,70 +389,29 @@ export default function DashboardClient() {
     );
   }
   
+  const chartData = prepareChartData();
+  
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       {/* Header */}
       <div className="bg-gradient-to-r from-teal-600 to-teal-700 text-white px-4 py-6">
         <div className="flex justify-between items-start">
           <div>
-            <h1 className="text-2xl font-bold">{t('dashboard.welcome')}</h1>
-            <p className="text-teal-100 mt-1">{t('dashboard.subtitle')}</p>
+            <h1 className="text-2xl font-bold">{t('dashboard.title')}</h1>
+            <p className="text-teal-100 text-sm mt-1">{t('dashboard.subtitle')}</p>
           </div>
-          <Button 
-            variant="outline" 
-            size="sm"
-            className="bg-white/10 border-white/20 text-white hover:bg-white/20"
-            onClick={restartOnboarding}
-          >
-            <RefreshCw className="w-4 h-4 mr-1" />
-            {t('onboarding.restart')}
-          </Button>
-        </div>
-      </div>
-      
-      {/* Quick Actions */}
-      <div className="px-4 mb-6">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Link href="/metrics">
-            <Button className="w-full bg-teal-600 hover:bg-teal-700 h-12">
-              <Plus className="w-4 h-4 mr-2" />
-              {t('dashboard.logWeight')}
-            </Button>
-          </Link>
-          <Link href="/calculators/tdee">
-            <Button variant="outline" className="w-full h-12">
-              <Calculator className="w-4 h-4 mr-2" />
-              {t('dashboard.tdeeCalc')}
-            </Button>
-          </Link>
-          <Link href="/calculators/bmi">
-            <Button variant="outline" className="w-full h-12">
-              <BarChart3 className="w-4 h-4 mr-2" />
-              {t('dashboard.bmiCalc')}
-            </Button>
-          </Link>
-          <Link href="/metrics">
-            <Button variant="outline" className="w-full h-12">
-              <Scale className="w-4 h-4 mr-2" />
-              {t('dashboard.fullMetrics')}
+          <Link href="/record">
+            <Button variant="secondary" size="sm" className="bg-white/20 hover:bg-white/30 text-white">
+              <Plus className="w-4 h-4 mr-1" />
+              {t('common.record')}
             </Button>
           </Link>
         </div>
       </div>
       
-      {/* Stats Cards - Using REAL data only */}
-      <div className="px-4 mb-6">
-        <StatsCards 
-          currentWeight={currentWeight}
-          previousWeight={previousWeight}
-          bmi={currentBMI}
-          todayCalories={todayIntake}
-          targetCalories={targetCalories}
-        />
-      </div>
-      
-      {/* Gamified Health Panel - Using REAL data only */}
-      <div className="px-4 mb-6">
+      {/* Main Content */}
+      <div className="px-4 py-4 space-y-4">
+        {/* Gamified Health Panel - 核心视觉焦点 */}
         <GamifiedHealthPanel
           tdee={tdee}
           todayIntake={todayIntake}
@@ -363,105 +420,86 @@ export default function DashboardClient() {
           proteinTarget={proteinTarget}
           energyDeficitTarget={energyDeficitTarget}
           exerciseTarget={exerciseTarget}
+          showRecordButton={true}
         />
-      </div>
-      
-      {/* Main Content */}
-      {metrics.length === 0 && !onboardingData.currentWeight ? (
-        /* Empty State */
-        <div className="px-4">
-          <EmptyState type="welcome" />
-        </div>
-      ) : (
-        /* Charts Section */
-        <div className="px-4 space-y-6">
-          {/* Weight Trend Chart */}
-          <WeightTrendChart 
-            data={prepareChartData()}
-            targetWeight={targetWeight}
+        
+        {/* Stats Cards */}
+        {currentWeight && (
+          <StatsCards
             currentWeight={currentWeight}
+            previousWeight={previousWeight}
+            bmi={currentBMI}
           />
-          
-          {/* Charts Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Calorie Balance Chart - Using REAL weekly data */}
-            {weeklyCalorieData.length > 0 ? (
-              <CalorieBalanceChart 
-                data={weeklyCalorieData.map(d => ({
-                  date: d.date,
-                  displayDate: new Date(d.date).toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' }),
-                  intake: d.intake,
-                  target: tdee || 2000,
-                  balance: (tdee || 2000) - d.intake - (d.exerciseBurn || 0)
-                }))} 
-              />
-            ) : (
-              <EmptyState type="no-calorie-data" />
-            )}
-            
-            {/* Goal Progress Ring */}
-            {targetWeight && startWeight && currentWeight ? (
-              <GoalProgressRing 
+        )}
+        
+        {/* Empty State for new users */}
+        {!currentWeight && metrics.length === 0 && (
+          <EmptyState type="welcome" onRecordClick={() => restartOnboarding()} />
+        )}
+        
+        {/* Weight Trend Chart */}
+        {chartData.length > 1 && (
+          <Card className="bg-white shadow-sm">
+            <CardContent className="p-4">
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">
+                {t('dashboard.weightTrend')}
+              </h3>
+              <WeightTrendChart data={chartData} />
+            </CardContent>
+          </Card>
+        )}
+        
+        {/* Calorie Balance Chart */}
+        {weeklyCalorieData.length > 0 && (
+          <Card className="bg-white shadow-sm">
+            <CardContent className="p-4">
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">
+                {t('dashboard.calorieBalance')}
+              </h3>
+              <CalorieBalanceChart data={weeklyCalorieData} />
+            </CardContent>
+          </Card>
+        )}
+        
+        {/* Goal Progress */}
+        {targetWeight && startWeight && currentWeight && (
+          <Card className="bg-white shadow-sm">
+            <CardContent className="p-4">
+              <h3 className="text-lg font-semibold text-gray-800 mb-3">
+                {t('dashboard.goalProgress')}
+              </h3>
+              <GoalProgressRing
                 currentWeight={currentWeight}
                 startWeight={startWeight}
                 targetWeight={targetWeight}
               />
-            ) : (
-              <EmptyState type="no-goal" />
-            )}
-          </div>
-          
-          {/* Recent Records */}
-          {metrics.length > 0 && (
-            <Card className="bg-white shadow-sm">
-              <CardContent className="p-4">
-                <h3 className="font-semibold text-gray-800 mb-4">
-                  {t('metrics.recentRecords')}
-                </h3>
-                <div className="space-y-3">
-                  {metrics.slice(0, 5).map((metric, index) => (
-                    <div key={metric.id} className="flex justify-between items-center py-2 border-b border-gray-100 last:border-0">
-                      <div>
-                        <span className="text-sm text-gray-500">
-                          {formatDate(metric.created_at)}
-                        </span>
-                        <span className="ml-3 font-medium text-gray-800">
-                          {metric.weight} kg
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {metric.bmi && (
-                          <span className="text-xs bg-teal-100 text-teal-700 px-2 py-1 rounded">
-                            BMI {metric.bmi.toFixed(1)}
-                          </span>
-                        )}
-                        {index > 0 && metrics[index - 1] && (
-                          <span className={`text-xs font-medium ${
-                            metric.weight < metrics[index - 1].weight 
-                              ? 'text-green-600' 
-                              : metric.weight > metrics[index - 1].weight 
-                                ? 'text-orange-500' 
-                                : 'text-gray-400'
-                          }`}>
-                            {metric.weight < metrics[index - 1].weight ? '↓' : metric.weight > metrics[index - 1].weight ? '↑' : '='}
-                            {Math.abs(metric.weight - metrics[index - 1].weight).toFixed(1)}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <Link href="/metrics">
-                  <Button variant="outline" className="w-full mt-4">
-                    {t('dashboard.viewAll')}
-                    <ArrowRight className="w-4 h-4 ml-2" />
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-          )}
-        </div>
-      )}
+            </CardContent>
+          </Card>
+        )}
+        
+        {/* Quick Actions */}
+        <Card className="bg-white shadow-sm">
+          <CardContent className="p-4">
+            <h3 className="text-lg font-semibold text-gray-800 mb-3">
+              {t('dashboard.quickActions')}
+            </h3>
+            <div className="grid grid-cols-2 gap-3">
+              <Link href="/calculators/tdee">
+                <Button variant="outline" className="w-full justify-start">
+                  <Calculator className="w-4 h-4 mr-2 text-teal-600" />
+                  {t('nav.tdee')}
+                </Button>
+              </Link>
+              <Link href="/calculators/bmi">
+                <Button variant="outline" className="w-full justify-start">
+                  <BarChart3 className="w-4 h-4 mr-2 text-orange-600" />
+                  {t('nav.bmi')}
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
