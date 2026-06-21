@@ -88,9 +88,6 @@ const withTimeout = <T,>(promise: Promise<T>, ms: number): Promise<T> => {
   });
 };
 
-// Get supabase client once (singleton pattern)
-const supabaseClient = getSupabaseBrowserClient();
-
 export default function DashboardClient() {
   const { t } = useI18n();
   const router = useRouter();
@@ -165,9 +162,12 @@ export default function DashboardClient() {
         setLoading(true);
         setLoadingTimeout(false);
         
+        // Get supabase client inside useEffect (safe, config should be ready by now)
+        const supabase = getSupabaseBrowserClient();
+        
         // Check session with timeout (3 seconds)
         const sessionResult = await withTimeout(
-          supabaseClient.auth.getSession(),
+          supabase.auth.getSession(),
           3000
         );
         
