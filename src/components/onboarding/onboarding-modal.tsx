@@ -175,8 +175,8 @@ function Step1BasicInfo() {
         )}
       </div>
       
-      {/* Sticky button area - always visible at bottom */}
-      <div className="sticky bottom-0 bg-white pt-4 pb-2 border-t border-gray-100 -mx-6 px-6 mt-4">
+      {/* Next Step Button */}
+      <div className="pt-4">
         <Button 
           onClick={handleNext}
           className="w-full bg-teal-500 hover:bg-teal-600"
@@ -347,8 +347,8 @@ function Step2GoalSetting() {
         )}
       </div>
       
-      {/* Sticky button area - always visible at bottom */}
-      <div className="sticky bottom-0 bg-white pt-4 pb-2 border-t border-gray-100 -mx-6 px-6 mt-4">
+      {/* Navigation Buttons */}
+      <div className="pt-4">
         <div className="flex gap-3">
           <Button variant="outline" onClick={prevStep} className="flex-1">
             <ChevronLeft className="w-4 h-4 mr-2" />
@@ -445,8 +445,8 @@ function Step3FirstRecord() {
         )}
       </div>
       
-      {/* Sticky button area - always visible at bottom */}
-      <div className="sticky bottom-0 bg-white pt-4 pb-2 border-t border-gray-100 -mx-6 px-6 mt-4">
+      {/* Navigation Buttons */}
+      <div className="pt-4">
         <div className="flex gap-3">
           <Button variant="outline" onClick={prevStep} className="flex-1">
             <ChevronLeft className="w-4 h-4 mr-2" />
@@ -489,8 +489,11 @@ export function OnboardingModal() {
   
   return (
     <Dialog open={isModalOpen} onOpenChange={(open) => !open && closeModal()}>
-      <DialogContent className="max-w-md mx-auto max-h-[90vh] flex flex-col p-6">
-        <DialogHeader className="flex-shrink-0">
+      <DialogContent 
+        className="max-w-md mx-auto max-h-[85vh] overflow-y-auto p-4 sm:p-6"
+        showCloseButton={true}
+      >
+        <DialogHeader>
           <DialogTitle className="text-center text-xl">
             {t('onboarding.title')}
           </DialogTitle>
@@ -500,7 +503,7 @@ export function OnboardingModal() {
         </DialogHeader>
         
         {/* Progress Indicator */}
-        <div className="flex justify-center gap-2 mb-3 flex-shrink-0">
+        <div className="flex justify-center gap-2 py-2">
           {[1, 2, 3].map((step) => (
             <div
               key={step}
@@ -518,19 +521,17 @@ export function OnboardingModal() {
         </div>
         
         {/* Current Step Title */}
-        <div className="text-center font-medium text-gray-700 mb-2 flex-shrink-0">
+        <div className="text-center font-medium text-gray-700 pb-2">
           {stepTitles[currentStep]}
         </div>
         
-        {/* Step Content - takes remaining space */}
-        <div className="flex-1 min-h-0">
-          {currentStep === 1 && <Step1BasicInfo />}
-          {currentStep === 2 && <Step2GoalSetting />}
-          {currentStep === 3 && <Step3FirstRecord />}
-        </div>
+        {/* Step Content */}
+        {currentStep === 1 && <Step1BasicInfo />}
+        {currentStep === 2 && <Step2GoalSetting />}
+        {currentStep === 3 && <Step3FirstRecord />}
         
-        {/* Skip Button - fixed at very bottom */}
-        <div className="text-center flex-shrink-0 pt-2">
+        {/* Skip Button */}
+        <div className="text-center pt-2">
           <Button variant="ghost" size="sm" onClick={closeModal} className="text-gray-500">
             {t('onboarding.skip')}
           </Button>

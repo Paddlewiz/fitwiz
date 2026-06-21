@@ -135,3 +135,25 @@
 body {
   @apply font-sans;
 }
+
+/* Fix for mobile scrolling issues */
+html {
+  touch-action: manipulation;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Ensure dialog content can scroll on mobile */
+[data-slot="dialog-overlay"] {
+  touch-action: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+[data-slot="dialog-content"] {
+  touch-action: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Allow body scroll when dialog is open (override Radix default) */
+body[data-scroll-locked] {
+  overflow-y: auto !important;
+}
