@@ -16,7 +16,7 @@ import { Calculator, TrendingDown, TrendingUp, Scale, Zap } from 'lucide-react';
 import { useI18n } from '@/lib/i18n-context';
 
 type Gender = 'male' | 'female';
-type ActivityLevel = 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
+type ActivityLevel = 'sedentary' | 'light' | 'moderate' | 'active' | 'veryActive';
 
 interface TDEEResult {
   bmr: number;
@@ -34,7 +34,7 @@ const activityMultipliers: Record<ActivityLevel, number> = {
   light: 1.375,
   moderate: 1.55,
   active: 1.725,
-  very_active: 1.9,
+  veryActive: 1.9,
 };
 
 export function TDEECalculatorClient() {
@@ -119,7 +119,7 @@ export function TDEECalculatorClient() {
               onClick={() => setUnitSystem('imperial')}
               className={unitSystem === 'imperial' ? 'bg-teal-500 hover:bg-teal-600' : ''}
             >
-              lb/in
+              磅/英寸
             </Button>
           </div>
 
@@ -154,7 +154,7 @@ export function TDEECalculatorClient() {
           {/* Weight */}
           <div className="space-y-2">
             <Label htmlFor="weight">
-              {t('tdee.weight')} ({unitSystem === 'metric' ? t('common.kg') : 'lbs'})
+              {t('tdee.weight')} ({unitSystem === 'metric' ? t('common.kg') : '磅'})
             </Label>
             <Input
               id="weight"
@@ -170,7 +170,7 @@ export function TDEECalculatorClient() {
           {/* Height */}
           <div className="space-y-2">
             <Label htmlFor="height">
-              {t('tdee.height')} ({unitSystem === 'metric' ? t('common.cm') : 'inches'})
+              {t('tdee.height')} ({unitSystem === 'metric' ? t('common.cm') : '英寸'})
             </Label>
             <Input
               id="height"

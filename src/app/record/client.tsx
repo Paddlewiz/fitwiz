@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useI18n } from '@/lib/i18n-context';
 import { useOnboarding } from '@/lib/onboarding-context';
-import { getSupabaseBrowserClient } from '@/lib/supabase-browser';
+import { getSupabaseBrowserClientAsync } from '@/lib/supabase-browser';
 import { UnifiedRecordForm, BodyData, DietRecord, ExerciseRecord } from '@/components/record/unified-record-form';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -55,7 +55,7 @@ export function RecordPageClient() {
 
   // 获取用户信息和今日记录
   const loadUserData = useCallback(async () => {
-    const supabase = getSupabaseBrowserClient();
+    const supabase = await getSupabaseBrowserClientAsync();
 
     // 获取用户
     const { data: { user } } = await supabase.auth.getUser();
@@ -112,7 +112,7 @@ export function RecordPageClient() {
   // 删除饮食记录
   const handleDeleteDiet = async (id: string) => {
     try {
-      const supabase = getSupabaseBrowserClient();
+      const supabase = await getSupabaseBrowserClientAsync();
       const { error } = await supabase
         .from('diet_logs')
         .delete()
@@ -132,7 +132,7 @@ export function RecordPageClient() {
   // 删除运动记录
   const handleDeleteExercise = async (id: string) => {
     try {
-      const supabase = getSupabaseBrowserClient();
+      const supabase = await getSupabaseBrowserClientAsync();
       const { error } = await supabase
         .from('exercise_logs')
         .delete()
@@ -159,7 +159,7 @@ export function RecordPageClient() {
 
     setIsSaving(true);
     try {
-      const supabase = getSupabaseBrowserClient();
+      const supabase = await getSupabaseBrowserClientAsync();
 
       // Calculate BMI if weight and height are available
       let bmi = data.bmi;
@@ -203,7 +203,7 @@ export function RecordPageClient() {
 
     setIsSaving(true);
     try {
-      const supabase = getSupabaseBrowserClient();
+      const supabase = await getSupabaseBrowserClientAsync();
       const today = new Date().toISOString().split('T')[0];
 
       const { error } = await supabase.from('diet_logs').insert({
@@ -241,7 +241,7 @@ export function RecordPageClient() {
 
     setIsSaving(true);
     try {
-      const supabase = getSupabaseBrowserClient();
+      const supabase = await getSupabaseBrowserClientAsync();
       const today = new Date().toISOString().split('T')[0];
 
       const { error } = await supabase.from('exercise_logs').insert({
@@ -277,7 +277,7 @@ export function RecordPageClient() {
 
     setIsSaving(true);
     try {
-      const supabase = getSupabaseBrowserClient();
+      const supabase = await getSupabaseBrowserClientAsync();
       const today = new Date().toISOString().split('T')[0];
 
       // 保存步数作为一条运动记录

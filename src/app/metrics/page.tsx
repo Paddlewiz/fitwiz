@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import { MetricsPageClient } from './client';
 
 export const metadata: Metadata = {
-  title: 'Body Metrics - FitWiz',
-  description: 'Track your body metrics including weight, body fat percentage, BMI, muscle mass, and more with FitWiz.',
+  title: '身体数据记录 - FitWiz',
+  description: '记录和追踪您的身体数据，包括体重、体脂率、BMI、肌肉量等指标。',
   robots: {
     index: false,
     follow: true,

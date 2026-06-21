@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import DashboardWrapper from './wrapper';
 
 export const metadata: Metadata = {
-  title: 'Dashboard - FitWiz',
-  description: 'View your health dashboard with weight trends, calorie balance, and progress tracking.',
+  title: '仪表盘 - FitWiz',
+  description: '查看您的健康数据概览、体重趋势图表、热量平衡和目标进度。',
   robots: {
     index: false,
     follow: true,

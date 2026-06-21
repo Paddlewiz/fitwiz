@@ -212,7 +212,16 @@
     "goToLogin": "前往登录",
     "autoCalcNote": "BMI根据体重和身高自动计算",
     "deleteSuccess": "记录已删除",
-    "saveSuccess": "记录已保存"
+    "saveSuccess": "记录已保存",
+    "addEntry": "添加数据",
+    "addMetric": "添加身体数据",
+    "noMetrics": "暂无身体数据记录",
+    "startTracking": "开始记录你的第一条数据",
+    "notesPlaceholder": "备注信息（可选）",
+    "loadError": "数据加载失败，请稍后重试",
+    "weightRequired": "请输入体重",
+    "saveError": "保存失败，请稍后重试",
+    "deleteError": "删除失败，请稍后重试"
   },
   "dashboard": {
     "title": "仪表盘",
@@ -314,7 +323,8 @@
     "deleteFailed": "删除失败",
     "loadingSlow": "加载较慢",
     "loadingSlowHint": "网络连接可能不稳定，请点击重试或稍后再试",
-    "record": "记录"
+    "record": "记录",
+    "saving": "保存中..."
   },
   "lang": {
     "zh": "中文",

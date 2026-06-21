@@ -118,14 +118,14 @@ export function BMICalculatorClient() {
               onClick={() => setUnitSystem('imperial')}
               className={unitSystem === 'imperial' ? 'bg-teal-500 hover:bg-teal-600' : ''}
             >
-              lb/in
+              磅/英寸
             </Button>
           </div>
 
           {/* Weight */}
           <div className="space-y-2">
             <Label htmlFor="weight">
-              {t('bmi.weight')} ({unitSystem === 'metric' ? t('common.kg') : 'lbs'})
+              {t('bmi.weight')} ({unitSystem === 'metric' ? t('common.kg') : '磅'})
             </Label>
             <Input
               id="weight"
@@ -141,7 +141,7 @@ export function BMICalculatorClient() {
           {/* Height */}
           <div className="space-y-2">
             <Label htmlFor="height">
-              {t('bmi.height')} ({unitSystem === 'metric' ? t('common.cm') : 'inches'})
+              {t('bmi.height')} ({unitSystem === 'metric' ? t('common.cm') : '英寸'})
             </Label>
             <Input
               id="height"

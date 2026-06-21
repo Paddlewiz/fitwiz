@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Plus, Calculator, LineChart, Scale, Activity, Target, ChevronRight } from 'lucide-react';
 import { useI18n } from '@/lib/i18n-context';
-import { getSupabaseBrowserClient } from '@/lib/supabase-browser';
+import { getSupabaseBrowserClientAsync } from '@/lib/supabase-browser';
 
 // Dynamically import GamifiedHealthPanel to avoid SSR issues with client-only features
 const GamifiedHealthPanel = dynamic(
@@ -217,7 +217,7 @@ export function HomeClient() {
 
   useEffect(() => {
     const checkAuth = async () => {
-      const supabase = getSupabaseBrowserClient();
+      const supabase = await getSupabaseBrowserClientAsync();
       
       // 获取用户登录状态
       const { data: { user } } = await supabase.auth.getUser();

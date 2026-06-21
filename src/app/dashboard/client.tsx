@@ -5,7 +5,7 @@ import { useI18n } from '@/lib/i18n-context';
 import { useOnboarding } from '@/lib/onboarding-context';
 import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
-import { getSupabaseBrowserClient } from '@/lib/supabase-browser';
+import { getSupabaseBrowserClientAsync } from '@/lib/supabase-browser';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Plus, Scale, Calculator, BarChart3, ArrowRight, RefreshCw, AlertCircle } from 'lucide-react';
@@ -117,6 +117,7 @@ export default function DashboardClient() {
   
   // Ref to track if data fetch is in progress
   const fetchingRef = useRef(false);
+  const [retryCount, setRetryCount] = useState(0);
   
   // Calculate TDEE from user profile (if available)
   const calculateTDEE = () => {
@@ -162,8 +163,8 @@ export default function DashboardClient() {
         setLoading(true);
         setLoadingTimeout(false);
         
-        // Get supabase client inside useEffect (safe, config should be ready by now)
-        const supabase = getSupabaseBrowserClient();
+        // Wait for Supabase config to be ready (SupabaseConfigProvider sets it async)
+        const supabase = await getSupabaseBrowserClientAsync();
         
         // Check session with timeout (3 seconds)
         const sessionResult = await withTimeout(
@@ -245,7 +246,7 @@ export default function DashboardClient() {
     return () => {
       fetchingRef.current = false;
     };
-  }, []); // Empty deps - run only once on mount
+  }, [retryCount]); // Re-run when retry is triggered
   
   // Handle retry
   const handleRetry = () => {
@@ -253,8 +254,7 @@ export default function DashboardClient() {
     setError(null);
     setLoadingTimeout(false);
     setLoading(true);
-    // Re-trigger the effect by setting state
-    // The effect will run again because we reset the ref
+    setRetryCount(c => c + 1); // Re-trigger useEffect
   };
   
   // Prepare chart data from actual metrics
