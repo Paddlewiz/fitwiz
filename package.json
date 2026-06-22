@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "next build",
+    "build": "next build && opennextjs-cloudflare build",
     "dev": "bash ./scripts/dev.sh",
     "preinstall": "npx only-allow pnpm",
     "lint": "eslint",
@@ -87,7 +87,9 @@
     "tailwindcss": "^4",
     "tsup": "^8.3.5",
     "tsx": "^4.19.2",
-    "typescript": "^5"
+    "typescript": "^5",
+    "@opennextjs/cloudflare": "^1.19.11",
+    "wrangler": "^3.99.0"
   },
   "packageManager": "pnpm@9.0.0",
   "engines": {
