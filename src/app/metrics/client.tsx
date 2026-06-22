@@ -10,7 +10,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useSupabaseConfig } from '@/lib/supabase-config-inject';
 import { getSupabaseBrowserClientWithRetry } from '@/lib/supabase-browser';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Scale, Plus, Trash2, Loader2, AlertCircle, TrendingDown, TrendingUp } from 'lucide-react';
+import { Scale, Plus, Trash2, Loader2, AlertCircle, TrendingDown, TrendingUp, ArrowLeft } from 'lucide-react';
+import { toast } from 'sonner';
 import { useTranslation } from '@/lib/i18n-context';
 
 interface BodyMetric {
@@ -183,6 +184,7 @@ export function MetricsPageClient() {
       setBoneMass('');
       setWaterPct('');
       setNotes('');
+      toast.success('已更新今日数据');
     } catch (err: any) {
       const errMsg = err?.message || err?.code || JSON.stringify(err);
       setError(`保存失败: ${errMsg}`);
@@ -261,7 +263,18 @@ export function MetricsPageClient() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="min-h-screen bg-gray-50">
+      <div className="sticky top-0 z-50 bg-white border-b border-gray-200">
+        <div className="container mx-auto px-4 py-3 max-w-4xl">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="sm" onClick={() => router.push('/')}>
+              <ArrowLeft className="w-4 h-4 mr-1" />
+              返回首页
+            </Button>
+          </div>
+        </div>
+      </div>
+      <div className="container mx-auto px-4 py-8">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
@@ -592,6 +605,7 @@ export function MetricsPageClient() {
             )}
           </CardContent>
         </Card>
+      </div>
       </div>
     </div>
   );

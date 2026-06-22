@@ -172,7 +172,21 @@ export function RecordPageClient() {
         bmi = data.weight / (heightM * heightM);
       }
 
-      const { error } = await supabase.from('body_metrics').insert({
+      // 查询今天是否已有记录（按天去重）
+      const today = new Date();
+      const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString();
+      const todayEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1).toISOString();
+
+      const { data: existingRecords } = await supabase
+        .from('body_metrics')
+        .select('id')
+        .eq('user_id', user.id)
+        .gte('recorded_at', todayStart)
+        .lt('recorded_at', todayEnd)
+        .order('recorded_at', { ascending: false })
+        .limit(1);
+
+      const metricData = {
         user_id: user.id,
         weight: data.weight,
         body_fat_pct: data.bodyFat || null,
@@ -184,9 +198,20 @@ export function RecordPageClient() {
         bone_mass: data.boneMass || null,
         water_pct: data.waterPercentage || null,
         recorded_at: new Date().toISOString(),
-      });
+      };
 
-      if (error) throw error;
+      if (existingRecords && existingRecords.length > 0) {
+        // 今天已有记录，更新它
+        const { error } = await supabase
+          .from('body_metrics')
+          .update(metricData)
+          .eq('id', existingRecords[0].id);
+        if (error) throw error;
+      } else {
+        // 今天没有记录，新增
+        const { error } = await supabase.from('body_metrics').insert(metricData);
+        if (error) throw error;
+      }
 
       // 如果用户填了基础代谢率，用 BMR × 活动系数 更新 user_profiles.tdee
       if (data.bmr && data.bmr > 0) {
@@ -203,7 +228,8 @@ export function RecordPageClient() {
       }
 
       completeOnboarding();
-      toast.success(t('record.bodyDataSaved'));
+      toast.success('身体数据已保存');
+      router.push('/metrics');
     } catch (error: any) {
       const errMsg = error?.message || error?.code || JSON.stringify(error);
       console.error('Error saving body data:', error);

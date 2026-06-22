@@ -70,7 +70,7 @@ interface DailyCalorieData {
 // Helper function to format date
 const formatDate = (dateStr: string) => {
   const date = new Date(dateStr);
-  return `${date.getMonth() + 1}/${date.getDate()}`;
+  return `${date.getMonth() + 1}月${date.getDate()}日`;
 };
 
 // Timeout helper

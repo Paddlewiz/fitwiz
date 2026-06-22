@@ -113,7 +113,7 @@ function LandingPage() {
                     <Calculator className="w-6 h-6 text-teal-600" />
                   </div>
                   <div>
-                    <p className="font-semibold text-gray-900">TDEE计算器</p>
+                    <p className="font-semibold text-gray-900">{t('landing.tdeeCalculator') || 'TDEE计算器'}</p>
                     <p className="text-xs text-gray-500">{t('landing.tdeeDescShort') || '每日能量消耗'}</p>
                   </div>
                 </CardContent>
@@ -126,7 +126,7 @@ function LandingPage() {
                     <Activity className="w-6 h-6 text-orange-600" />
                   </div>
                   <div>
-                    <p className="font-semibold text-gray-900">BMI计算器</p>
+                    <p className="font-semibold text-gray-900">{t('landing.bmiCalculator') || 'BMI计算器'}</p>
                     <p className="text-xs text-gray-500">{t('landing.bmiDescShort') || '体质指数评估'}</p>
                   </div>
                 </CardContent>
@@ -246,7 +246,7 @@ function LoggedInHome({ todayData }: { todayData: TodayData }) {
                   <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center">
                     <Calculator className="w-4 h-4 text-emerald-600" />
                   </div>
-                  <span className="font-medium text-gray-900 text-sm">TDEE计算器</span>
+                  <span className="font-medium text-gray-900 text-sm">{t('landing.tdeeCalculator') || 'TDEE计算器'}</span>
                 </CardContent>
               </Card>
             </Link>
@@ -256,7 +256,7 @@ function LoggedInHome({ todayData }: { todayData: TodayData }) {
                   <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center">
                     <Activity className="w-4 h-4 text-orange-600" />
                   </div>
-                  <span className="font-medium text-gray-900 text-sm">BMI计算器</span>
+                  <span className="font-medium text-gray-900 text-sm">{t('landing.bmiCalculator') || 'BMI计算器'}</span>
                 </CardContent>
               </Card>
             </Link>

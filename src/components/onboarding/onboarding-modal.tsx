@@ -271,7 +271,7 @@ function Step2GoalSetting() {
           <CardContent className="p-3">
             <div className="flex justify-between items-center">
               <span className="text-gray-600">{t('onboarding.currentWeight')}</span>
-              <span className="text-lg font-bold">{data.currentWeight} kg</span>
+              <span className="text-lg font-bold">{data.currentWeight} 公斤</span>
             </div>
           </CardContent>
         </Card>
